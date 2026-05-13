@@ -23,9 +23,7 @@ import {
   Terminal,
   Eraser,
   Zap,
-  MoveRight,
-  CornerDownLeft,
-  CornerDownRight,
+  Move,
   X,
 } from 'lucide-react'
 
@@ -50,8 +48,6 @@ function TreeNodeRow({
     addNode,
     moveNode,
     moveNodeTo,
-    indentNode,
-    outdentNode,
     setMovingId,
     cancelMove,
   } = useTreeStore()
@@ -71,7 +67,7 @@ function TreeNodeRow({
   }, [isEditing])
 
   const handleDoubleClick = () => {
-    if (movingId) return // don't rename while moving
+    if (movingId) return
     setEditingId(node.id)
   }
 
@@ -91,10 +87,8 @@ function TreeNodeRow({
 
   const handleClick = () => {
     if (movingId && isDropTarget) {
-      // Drop the moving node into this folder
       moveNodeTo(movingId, node.id)
-    } else if (movingId && movingId === node.id) {
-      // Clicked on the node being moved — cancel
+    } else if (movingId && isBeingMoved) {
       cancelMove()
     } else {
       selectNode(node.id)
@@ -104,11 +98,11 @@ function TreeNodeRow({
   return (
     <>
       <div
-        className={`group flex items-center gap-1 py-0.5 px-2 cursor-pointer transition-colors ${
+        className={`group flex items-center gap-1 py-1 px-2 cursor-pointer transition-all ${
           isBeingMoved
-            ? 'bg-amber-900/30 ring-2 ring-amber-500/50 glow-amber'
-            : isDropTarget && movingId !== null
-            ? 'hover:bg-amber-900/30 hover:ring-2 hover:ring-amber-500/30'
+            ? 'bg-amber-900/30 ring-2 ring-amber-400/60 shadow-[0_0_8px_rgba(255,179,71,0.2)]'
+            : isDropTarget
+            ? 'bg-amber-900/10 ring-1 ring-amber-600/30 hover:bg-amber-900/25 hover:ring-amber-500/50'
             : isSelected
             ? 'bg-green-900/30 ring-1 ring-green-500/40'
             : 'hover:bg-green-900/15'
@@ -121,7 +115,9 @@ function TreeNodeRow({
         {node.type === 'folder' ? (
           <button
             onClick={(e) => { e.stopPropagation(); toggleExpand(node.id) }}
-            className="shrink-0 p-0.5 rounded hover:bg-green-900/30 text-green-400"
+            className={`shrink-0 p-0.5 rounded hover:bg-green-900/30 ${
+              isDropTarget ? 'text-amber-400' : 'text-green-400'
+            }`}
           >
             {node.isExpanded ? (
               <ChevronDown className="h-3.5 w-3.5" />
@@ -135,7 +131,7 @@ function TreeNodeRow({
 
         {/* Icon */}
         {node.type === 'folder' ? (
-          <Folder className="h-4 w-4 text-amber-400 shrink-0" />
+          <Folder className={`h-4 w-4 shrink-0 ${isDropTarget ? 'text-amber-300' : 'text-amber-400'}`} />
         ) : (
           <File className="h-4 w-4 text-green-500/60 shrink-0" />
         )}
@@ -154,16 +150,18 @@ function TreeNodeRow({
           <span className="text-sm truncate flex-1 min-w-0 select-none glow-green">
             {node.name}
             {node.type === 'folder' && <span className="text-green-600">/</span>}
-            {isBeingMoved && (
-              <span className="ml-2 text-amber-400 text-[0.6rem] tracking-wider uppercase glow-amber animate-pulse">
-                [MOVING — click folder to drop]
-              </span>
-            )}
-            {isDropTarget && movingId !== null && (
-              <span className="ml-2 text-amber-300/70 text-[0.6rem] tracking-wider">
-                [drop here]
-              </span>
-            )}
+          </span>
+        )}
+
+        {/* Move mode indicator */}
+        {isBeingMoved && !isEditing && (
+          <span className="text-amber-400 text-[0.6rem] tracking-wider uppercase glow-amber animate-pulse shrink-0">
+            MOVING
+          </span>
+        )}
+        {isDropTarget && !isEditing && (
+          <span className="text-amber-300/80 text-[0.6rem] tracking-wider shrink-0">
+            [drop here]
           </span>
         )}
 
@@ -196,23 +194,9 @@ function TreeNodeRow({
               <button
                 onClick={(e) => { e.stopPropagation(); setMovingId(node.id) }}
                 className="p-1 rounded hover:bg-amber-900/40 text-amber-300"
-                title="Move to another folder"
+                title="Move into another folder"
               >
-                <MoveRight className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); indentNode(node.id) }}
-                className="p-1 rounded hover:bg-green-900/40 text-green-400"
-                title="Indent (nest into previous sibling folder)"
-              >
-                <CornerDownRight className="h-3.5 w-3.5" />
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); outdentNode(node.id) }}
-                className="p-1 rounded hover:bg-green-900/40 text-green-400"
-                title="Outdent (move up one level)"
-              >
-                <CornerDownLeft className="h-3.5 w-3.5" />
+                <Move className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setEditingId(node.id) }}
@@ -240,7 +224,7 @@ function TreeNodeRow({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              if (movingId === node.id) cancelMove()
+              if (isBeingMoved) cancelMove()
               else deleteNode(node.id)
             }}
             className={`p-1 rounded ${
@@ -314,9 +298,7 @@ export default function Home() {
   }, [importText, importTree])
 
   const handleMoveToRoot = useCallback(() => {
-    if (movingId) {
-      moveNodeTo(movingId, null)
-    }
+    if (movingId) moveNodeTo(movingId, null)
   }, [movingId, moveNodeTo])
 
   return (
@@ -367,11 +349,14 @@ export default function Home() {
 
       {/* Move mode banner */}
       {movingId && (
-        <div className="border-b border-amber-700/50 bg-amber-900/20">
-          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
-            <span className="text-xs font-mono text-amber-400 glow-amber tracking-wider">
-              {'>'} MOVE MODE ACTIVE — click a folder to drop into it, or use buttons below
-            </span>
+        <div className="border-b border-amber-600/50 bg-amber-900/20">
+          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Move className="h-4 w-4 text-amber-400 animate-pulse" />
+              <span className="text-xs font-mono text-amber-400 glow-amber tracking-wider">
+                MOVE MODE — click any folder to drop into it
+              </span>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 size="sm"
@@ -386,7 +371,7 @@ export default function Home() {
                 onClick={cancelMove}
                 className="text-red-400 hover:text-red-300 hover:bg-red-900/20 font-mono text-xs h-6"
               >
-                [CANCEL]
+                [ESC] CANCEL
               </Button>
             </div>
           </div>
@@ -462,10 +447,12 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Root name input — also acts as drop target for root */}
+            {/* Root name — also acts as drop-to-root target */}
             <div
-              className={`px-4 py-2 border-b border-green-900/40 flex items-center gap-2 transition-colors ${
-                movingId ? 'hover:bg-amber-900/15 cursor-pointer' : ''
+              className={`px-4 py-2 border-b flex items-center gap-2 transition-colors ${
+                movingId
+                  ? 'border-amber-700/40 bg-amber-900/10 hover:bg-amber-900/20 cursor-pointer'
+                  : 'border-green-900/40'
               }`}
               onClick={() => { if (movingId) handleMoveToRoot() }}
             >
@@ -478,7 +465,9 @@ export default function Home() {
                 onClick={(e) => { if (movingId) { e.stopPropagation(); handleMoveToRoot() } }}
               />
               {movingId && (
-                <span className="text-[0.6rem] text-amber-400/70 font-mono shrink-0">[drop at root]</span>
+                <span className="text-[0.6rem] text-amber-400/80 font-mono shrink-0 glow-amber">
+                  [drop at root]
+                </span>
               )}
             </div>
 
@@ -580,34 +569,28 @@ export default function Home() {
                     <ul className="text-[0.65rem] text-green-600 space-y-1.5 font-mono">
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">01</span>
-                        Click item to select, hover for action buttons
+                        Click to select, double-click to rename
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">02</span>
-                        Double-click any item to rename inline
+                        <Move className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
+                        Click the move icon to pick up a node
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">03</span>
-                        <MoveRight className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
-                        Move mode: pick up a node, then click a folder to drop it in
+                        Then click any folder to drop it inside — works at any depth
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">04</span>
-                        <CornerDownRight className="h-3 w-3 text-green-400 mt-0.5 shrink-0" />
-                        Indent: nest into the previous sibling folder
+                        Click root name bar or MOVE TO ROOT to send to top level
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">05</span>
-                        <CornerDownLeft className="h-3 w-3 text-green-400 mt-0.5 shrink-0" />
-                        Outdent: move up one level out of current parent
+                        Press Esc or click X to cancel a move
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">06</span>
-                        Use arrows to reorder siblings at same level
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-amber-500 font-bold">07</span>
-                        Click the root name bar to drop a node at root level
+                        Use up/down arrows to reorder within same folder
                       </li>
                     </ul>
                   </div>
