@@ -318,7 +318,7 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Tree Builder */}
-          <div className="terminal-border crt-screen bg-[#0a0d0a] flex flex-col">
+          <div className="terminal-border crt-screen bg-[#0a0d0a] flex flex-col" suppressHydrationWarning>
             {/* Title bar */}
             <div className="px-4 py-2.5 border-b border-green-800/50 flex items-center justify-between bg-[#080b08]">
               <div className="flex items-center gap-2">
@@ -389,7 +389,7 @@ export default function Home() {
           </div>
 
           {/* Right: Output */}
-          <div className="terminal-border-amber crt-screen bg-[#0a0d0a] flex flex-col">
+          <div className="terminal-border-amber crt-screen bg-[#0a0d0a] flex flex-col" suppressHydrationWarning>
             {/* Title bar */}
             <div className="px-4 py-2.5 border-b border-amber-800/40 flex items-center justify-between bg-[#080b08]">
               <div className="flex items-center gap-2">
