@@ -10,7 +10,7 @@ export interface TreeNode {
 
 let _idCounter = 0
 function genId() {
-  return `node-${++_idCounter}-${Date.now()}`
+  return `node-${++_idCounter}`
 }
 
 export function createFolder(name: string, children: TreeNode[] = []): TreeNode {
