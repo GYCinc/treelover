@@ -132,6 +132,37 @@ function findParentOf(nodes: TreeNode[], id: string): { parent: TreeNode[] | nul
   return { parent: null, index: -1 }
 }
 
+/** Find which node list contains a given child list (for outdent — find grandparent) */
+function findGrandparentOf(
+  nodes: TreeNode[],
+  childList: TreeNode[]
+): { grandparentList: TreeNode[]; grandparentIndex: number } | null {
+  // Check if childList IS the root nodes array
+  if (nodes === childList) return null
+
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].type === 'folder') {
+      if (nodes[i].children === childList) {
+        return { grandparentList: nodes, grandparentIndex: i }
+      }
+      const result = findGrandparentOf(nodes[i].children, childList)
+      if (result) return result
+    }
+  }
+  return null
+}
+
+/** Check if `targetId` is a descendant of `nodeId` — prevents circular nesting */
+function isDescendantOf(nodes: TreeNode[], nodeId: string, targetId: string): boolean {
+  const node = findNodeById(nodes, nodeId)
+  if (!node || node.type !== 'folder') return false
+  for (const child of node.children) {
+    if (child.id === targetId) return true
+    if (child.type === 'folder' && isDescendantOf(child.children, nodeId, targetId)) return true
+  }
+  return false
+}
+
 function deepClone(nodes: TreeNode[]): TreeNode[] {
   return nodes.map(n => ({
     ...n,
@@ -144,6 +175,7 @@ interface TreeState {
   nodes: TreeNode[]
   selectedId: string | null
   editingId: string | null
+  movingId: string | null  // node currently being moved ("picked up")
 
   setRootName: (name: string) => void
   addNode: (parentId: string | null, type: 'folder' | 'file') => void
@@ -153,6 +185,11 @@ interface TreeState {
   selectNode: (id: string | null) => void
   setEditingId: (id: string | null) => void
   moveNode: (id: string, direction: 'up' | 'down') => void
+  moveNodeTo: (nodeId: string, targetParentId: string | null) => void  // re-parent
+  indentNode: (id: string) => void   // nest into previous sibling
+  outdentNode: (id: string) => void  // un-nest to parent's parent
+  setMovingId: (id: string | null) => void
+  cancelMove: () => void
   importTree: (text: string) => void
   clearAll: () => void
 }
@@ -162,6 +199,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   nodes: [],
   selectedId: null,
   editingId: null,
+  movingId: null,
 
   setRootName: (name) => set({ rootName: name }),
 
@@ -230,10 +268,91 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     })
   },
 
-  importTree: (text) => {
-    const { rootName, nodes } = parseTreeText(text)
-    set({ rootName, nodes, selectedId: null, editingId: null })
+  moveNodeTo: (nodeId, targetParentId) => {
+    set((state) => {
+      if (nodeId === targetParentId) return { nodes: state.nodes, movingId: null }
+      const nodes = deepClone(state.nodes)
+
+      // Prevent moving a folder into its own descendant
+      if (targetParentId && isDescendantOf(nodes, nodeId, targetParentId)) {
+        return { nodes: state.nodes, movingId: null }
+      }
+
+      // Find and remove node from current location
+      const { parent: srcParent, index: srcIndex } = findParentOf(nodes, nodeId)
+      if (!srcParent) return { nodes, movingId: null }
+      const [removed] = srcParent.splice(srcIndex, 1)
+
+      // Insert into target
+      if (targetParentId === null) {
+        nodes.push(removed)
+      } else {
+        const target = findNodeById(nodes, targetParentId)
+        if (target && target.type === 'folder') {
+          target.children.push(removed)
+          target.isExpanded = true
+        } else {
+          // Target vanished somehow, put it back
+          srcParent.splice(srcIndex, 0, removed)
+        }
+      }
+
+      return { nodes, movingId: null, selectedId: nodeId }
+    })
   },
 
-  clearAll: () => set({ nodes: [], selectedId: null, editingId: null }),
+  indentNode: (id) => {
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+      const { parent, index } = findParentOf(nodes, id)
+      if (!parent || index <= 0) return { nodes }
+
+      // Previous sibling must be a folder to nest into
+      const prevSibling = parent[index - 1]
+      if (prevSibling.type !== 'folder') return { nodes }
+
+      // Prevent circular
+      if (isDescendantOf(nodes, id, prevSibling.id)) return { nodes }
+
+      const [removed] = parent.splice(index, 1)
+      prevSibling.children.push(removed)
+      prevSibling.isExpanded = true
+
+      return { nodes, selectedId: id }
+    })
+  },
+
+  outdentNode: (id) => {
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+      const { parent, index } = findParentOf(nodes, id)
+
+      // Can't outdent if at root level (parent is the top-level array)
+      if (!parent) return { nodes }
+
+      // Find the grandparent (the TreeNode[] that contains our parent folder)
+      // We need to find which folder contains our current parent list
+      const grandparentInfo = findGrandparentOf(nodes, parent)
+      if (!grandparentInfo) return { nodes } // already at root
+
+      const { grandparentList, grandparentIndex } = grandparentInfo
+
+      const [removed] = parent.splice(index, 1)
+      // Insert right after the parent folder in the grandparent list
+      grandparentList.splice(grandparentIndex + 1, 0, removed)
+
+      return { nodes, selectedId: id }
+    })
+  },
+
+  setMovingId: (id) => set({ movingId: id }),
+
+  cancelMove: () => set({ movingId: null }),
+
+  importTree: (text) => {
+    const { rootName, nodes } = parseTreeText(text)
+    set({ rootName, nodes, selectedId: null, editingId: null, movingId: null })
+  },
+
+  clearAll: () => set({ nodes: [], selectedId: null, editingId: null, movingId: null }),
 }))

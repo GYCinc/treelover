@@ -23,6 +23,10 @@ import {
   Terminal,
   Eraser,
   Zap,
+  MoveRight,
+  CornerDownLeft,
+  CornerDownRight,
+  X,
 } from 'lucide-react'
 
 // ─── Tree Node Component ────────────────────────────────────────────────
@@ -37,6 +41,7 @@ function TreeNodeRow({
   const {
     selectedId,
     editingId,
+    movingId,
     selectNode,
     toggleExpand,
     deleteNode,
@@ -44,10 +49,18 @@ function TreeNodeRow({
     setEditingId,
     addNode,
     moveNode,
+    moveNodeTo,
+    indentNode,
+    outdentNode,
+    setMovingId,
+    cancelMove,
   } = useTreeStore()
 
   const isSelected = selectedId === node.id
   const isEditing = editingId === node.id
+  const isBeingMoved = movingId === node.id
+  const isDropTarget = movingId !== null && node.type === 'folder' && movingId !== node.id
+
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -58,6 +71,7 @@ function TreeNodeRow({
   }, [isEditing])
 
   const handleDoubleClick = () => {
+    if (movingId) return // don't rename while moving
     setEditingId(node.id)
   }
 
@@ -69,19 +83,38 @@ function TreeNodeRow({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleRenameSubmit()
-    if (e.key === 'Escape') setEditingId(null)
+    if (e.key === 'Escape') {
+      if (movingId) cancelMove()
+      else setEditingId(null)
+    }
+  }
+
+  const handleClick = () => {
+    if (movingId && isDropTarget) {
+      // Drop the moving node into this folder
+      moveNodeTo(movingId, node.id)
+    } else if (movingId && movingId === node.id) {
+      // Clicked on the node being moved — cancel
+      cancelMove()
+    } else {
+      selectNode(node.id)
+    }
   }
 
   return (
     <>
       <div
         className={`group flex items-center gap-1 py-0.5 px-2 cursor-pointer transition-colors ${
-          isSelected
+          isBeingMoved
+            ? 'bg-amber-900/30 ring-2 ring-amber-500/50 glow-amber'
+            : isDropTarget && movingId !== null
+            ? 'hover:bg-amber-900/30 hover:ring-2 hover:ring-amber-500/30'
+            : isSelected
             ? 'bg-green-900/30 ring-1 ring-green-500/40'
             : 'hover:bg-green-900/15'
         }`}
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
-        onClick={() => selectNode(node.id)}
+        onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
         {/* Expand/collapse toggle for folders */}
@@ -121,60 +154,103 @@ function TreeNodeRow({
           <span className="text-sm truncate flex-1 min-w-0 select-none glow-green">
             {node.name}
             {node.type === 'folder' && <span className="text-green-600">/</span>}
+            {isBeingMoved && (
+              <span className="ml-2 text-amber-400 text-[0.6rem] tracking-wider uppercase glow-amber animate-pulse">
+                [MOVING — click folder to drop]
+              </span>
+            )}
+            {isDropTarget && movingId !== null && (
+              <span className="ml-2 text-amber-300/70 text-[0.6rem] tracking-wider">
+                [drop here]
+              </span>
+            )}
           </span>
         )}
 
         {/* Action buttons */}
         <div
           className={`flex items-center gap-0.5 shrink-0 transition-opacity ${
-            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            isSelected || isBeingMoved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
           }`}
         >
-          {node.type === 'folder' && (
+          {movingId === null && (
             <>
+              {node.type === 'folder' && (
+                <>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); addNode(node.id, 'folder') }}
+                    className="p-1 rounded hover:bg-green-900/40 text-amber-400"
+                    title="Add subfolder"
+                  >
+                    <FolderPlus className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); addNode(node.id, 'file') }}
+                    className="p-1 rounded hover:bg-green-900/40 text-green-400"
+                    title="Add file"
+                  >
+                    <FilePlus className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              )}
               <button
-                onClick={(e) => { e.stopPropagation(); addNode(node.id, 'folder') }}
-                className="p-1 rounded hover:bg-green-900/40 text-amber-400"
-                title="Add subfolder"
+                onClick={(e) => { e.stopPropagation(); setMovingId(node.id) }}
+                className="p-1 rounded hover:bg-amber-900/40 text-amber-300"
+                title="Move to another folder"
               >
-                <FolderPlus className="h-3.5 w-3.5" />
+                <MoveRight className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={(e) => { e.stopPropagation(); addNode(node.id, 'file') }}
+                onClick={(e) => { e.stopPropagation(); indentNode(node.id) }}
                 className="p-1 rounded hover:bg-green-900/40 text-green-400"
-                title="Add file"
+                title="Indent (nest into previous sibling folder)"
               >
-                <FilePlus className="h-3.5 w-3.5" />
+                <CornerDownRight className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); outdentNode(node.id) }}
+                className="p-1 rounded hover:bg-green-900/40 text-green-400"
+                title="Outdent (move up one level)"
+              >
+                <CornerDownLeft className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setEditingId(node.id) }}
+                className="p-1 rounded hover:bg-green-900/40 text-green-300"
+                title="Rename"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'up') }}
+                className="p-1 rounded hover:bg-green-900/40 text-green-500"
+                title="Move up"
+              >
+                <ArrowUp className="h-3 w-3" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'down') }}
+                className="p-1 rounded hover:bg-green-900/40 text-green-500"
+                title="Move down"
+              >
+                <ArrowDown className="h-3 w-3" />
               </button>
             </>
           )}
           <button
-            onClick={(e) => { e.stopPropagation(); setEditingId(node.id) }}
-            className="p-1 rounded hover:bg-green-900/40 text-green-300"
-            title="Rename"
+            onClick={(e) => {
+              e.stopPropagation()
+              if (movingId === node.id) cancelMove()
+              else deleteNode(node.id)
+            }}
+            className={`p-1 rounded ${
+              isBeingMoved
+                ? 'hover:bg-amber-900/40 text-amber-400'
+                : 'hover:bg-red-900/40 text-red-400'
+            }`}
+            title={isBeingMoved ? 'Cancel move' : 'Delete'}
           >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'up') }}
-            className="p-1 rounded hover:bg-green-900/40 text-green-500"
-            title="Move up"
-          >
-            <ArrowUp className="h-3 w-3" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'down') }}
-            className="p-1 rounded hover:bg-green-900/40 text-green-500"
-            title="Move down"
-          >
-            <ArrowDown className="h-3 w-3" />
-          </button>
-          <button
-            onClick={(e) => { e.stopPropagation(); deleteNode(node.id) }}
-            className="p-1 rounded hover:bg-red-900/40 text-red-400"
-            title="Delete"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
+            {isBeingMoved ? <X className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
           </button>
         </div>
       </div>
@@ -197,8 +273,11 @@ export default function Home() {
   const {
     rootName,
     nodes,
+    movingId,
     setRootName,
     addNode,
+    moveNodeTo,
+    cancelMove,
     clearAll,
     importTree,
   } = useTreeStore()
@@ -233,6 +312,12 @@ export default function Home() {
       setShowImport(false)
     }
   }, [importText, importTree])
+
+  const handleMoveToRoot = useCallback(() => {
+    if (movingId) {
+      moveNodeTo(movingId, null)
+    }
+  }, [movingId, moveNodeTo])
 
   return (
     <div className="min-h-screen bg-[#0c0f0c] crt-flicker patina-grid">
@@ -279,6 +364,34 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Move mode banner */}
+      {movingId && (
+        <div className="border-b border-amber-700/50 bg-amber-900/20">
+          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
+            <span className="text-xs font-mono text-amber-400 glow-amber tracking-wider">
+              {'>'} MOVE MODE ACTIVE — click a folder to drop into it, or use buttons below
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleMoveToRoot}
+                className="bg-amber-800/40 border border-amber-600/50 text-amber-300 hover:bg-amber-700/50 font-mono text-xs h-6"
+              >
+                MOVE TO ROOT
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={cancelMove}
+                className="text-red-400 hover:text-red-300 hover:bg-red-900/20 font-mono text-xs h-6"
+              >
+                [CANCEL]
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Panel */}
       {showImport && (
@@ -349,19 +462,29 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Root name input */}
-            <div className="px-4 py-2 border-b border-green-900/40 flex items-center gap-2">
-              <span className="text-[0.65rem] text-green-600 font-mono tracking-wider">ROOT:</span>
+            {/* Root name input — also acts as drop target for root */}
+            <div
+              className={`px-4 py-2 border-b border-green-900/40 flex items-center gap-2 transition-colors ${
+                movingId ? 'hover:bg-amber-900/15 cursor-pointer' : ''
+              }`}
+              onClick={() => { if (movingId) handleMoveToRoot() }}
+            >
+              <Folder className="h-4 w-4 text-amber-400" />
+              <span className="text-[0.65rem] text-green-600 font-mono tracking-wider shrink-0">ROOT:</span>
               <Input
                 value={rootName}
                 onChange={(e) => setRootName(e.target.value)}
                 className="h-6 text-sm font-mono bg-black/40 border-green-800/40 text-green-300 glow-green focus:border-amber-600/50 px-2"
+                onClick={(e) => { if (movingId) { e.stopPropagation(); handleMoveToRoot() } }}
               />
+              {movingId && (
+                <span className="text-[0.6rem] text-amber-400/70 font-mono shrink-0">[drop at root]</span>
+              )}
             </div>
 
             {/* Tree content */}
             <div className="flex-1 p-1 overflow-hidden">
-              <ScrollArea className="h-[calc(100vh-300px)] min-h-[280px]">
+              <ScrollArea className="h-[calc(100vh-340px)] min-h-[280px]">
                 {nodes.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-green-700">
                     <Folder className="h-12 w-12 mb-3 opacity-30" />
@@ -369,16 +492,9 @@ export default function Home() {
                     <p className="text-[0.65rem] mt-1 font-mono text-green-800">
                       Click FOLDER or FILE above to begin
                     </p>
-                    <p className="text-[0.65rem] mt-0.5 font-mono text-green-800">
-                      Hover items for actions: add, rename, reorder, delete
-                    </p>
                   </div>
                 ) : (
                   <div className="py-1">
-                    <div className="flex items-center gap-1.5 py-1 px-2 mb-1">
-                      <Folder className="h-4 w-4 text-amber-400" />
-                      <span className="text-sm font-bold text-amber-400 glow-amber tracking-wide">{rootName}/</span>
-                    </div>
                     {nodes.map((node) => (
                       <TreeNodeRow key={node.id} node={node} depth={1} />
                     ))}
@@ -472,15 +588,26 @@ export default function Home() {
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">03</span>
-                        Folders show add subfolder / add file on hover
+                        <MoveRight className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
+                        Move mode: pick up a node, then click a folder to drop it in
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">04</span>
-                        Use arrows to reorder siblings at same level
+                        <CornerDownRight className="h-3 w-3 text-green-400 mt-0.5 shrink-0" />
+                        Indent: nest into the previous sibling folder
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">05</span>
-                        Import existing tree text to edit visually
+                        <CornerDownLeft className="h-3 w-3 text-green-400 mt-0.5 shrink-0" />
+                        Outdent: move up one level out of current parent
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">06</span>
+                        Use arrows to reorder siblings at same level
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-amber-500 font-bold">07</span>
+                        Click the root name bar to drop a node at root level
                       </li>
                     </ul>
                   </div>
