@@ -6,6 +6,17 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
+  DndContext,
+  DragOverlay,
+  useDraggable,
+  useDroppable,
+  type DragStartEvent,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
   FolderPlus,
   FilePlus,
   Trash2,
@@ -25,11 +36,12 @@ import {
   Zap,
   Move,
   X,
+  GripVertical,
 } from 'lucide-react'
 
-// ─── Tree Node Component ────────────────────────────────────────────────
+// ─── Draggable Tree Node ────────────────────────────────────────────────
 
-function TreeNodeRow({
+function DraggableTreeNodeRow({
   node,
   depth,
 }: {
@@ -55,9 +67,24 @@ function TreeNodeRow({
   const isSelected = selectedId === node.id
   const isEditing = editingId === node.id
   const isBeingMoved = movingId === node.id
-  const isDropTarget = movingId !== null && node.type === 'folder' && movingId !== node.id
+  const isClickDropTarget = movingId !== null && node.type === 'folder' && movingId !== node.id
 
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Set up draggable
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: node.id,
+    data: { node },
+  })
+
+  // Set up droppable (folders are drop targets)
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: `drop-${node.id}`,
+    data: { node },
+    disabled: node.type !== 'folder',
+  })
+
+  const isDropHovered = isOver && node.type === 'folder'
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -86,7 +113,7 @@ function TreeNodeRow({
   }
 
   const handleClick = () => {
-    if (movingId && isDropTarget) {
+    if (movingId && isClickDropTarget) {
       moveNodeTo(movingId, node.id)
     } else if (movingId && isBeingMoved) {
       cancelMove()
@@ -95,13 +122,26 @@ function TreeNodeRow({
     }
   }
 
+  const combinedRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      setNodeRef(el)
+      if (node.type === 'folder') setDroppableRef(el)
+    },
+    [setNodeRef, setDroppableRef, node.type]
+  )
+
   return (
     <>
       <div
+        ref={combinedRef}
         className={`group flex items-center gap-1 py-1 px-2 cursor-pointer transition-all ${
-          isBeingMoved
+          isDragging
+            ? 'opacity-40 ring-2 ring-amber-400/30'
+            : isBeingMoved
             ? 'bg-amber-900/30 ring-2 ring-amber-400/60 shadow-[0_0_8px_rgba(255,179,71,0.2)]'
-            : isDropTarget
+            : isDropHovered
+            ? 'bg-amber-900/30 ring-2 ring-amber-400/70 shadow-[0_0_12px_rgba(255,179,71,0.3)]'
+            : isClickDropTarget
             ? 'bg-amber-900/10 ring-1 ring-amber-600/30 hover:bg-amber-900/25 hover:ring-amber-500/50'
             : isSelected
             ? 'bg-green-900/30 ring-1 ring-green-500/40'
@@ -111,12 +151,21 @@ function TreeNodeRow({
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
+        {/* Drag handle */}
+        <span
+          {...attributes}
+          {...listeners}
+          className="shrink-0 cursor-grab active:cursor-grabbing text-green-700 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </span>
+
         {/* Expand/collapse toggle for folders */}
         {node.type === 'folder' ? (
           <button
             onClick={(e) => { e.stopPropagation(); toggleExpand(node.id) }}
             className={`shrink-0 p-0.5 rounded hover:bg-green-900/30 ${
-              isDropTarget ? 'text-amber-400' : 'text-green-400'
+              isDropHovered || isClickDropTarget ? 'text-amber-400' : 'text-green-400'
             }`}
           >
             {node.isExpanded ? (
@@ -131,7 +180,7 @@ function TreeNodeRow({
 
         {/* Icon */}
         {node.type === 'folder' ? (
-          <Folder className={`h-4 w-4 shrink-0 ${isDropTarget ? 'text-amber-300' : 'text-amber-400'}`} />
+          <Folder className={`h-4 w-4 shrink-0 ${isDropHovered ? 'text-amber-200' : 'text-amber-400'}`} />
         ) : (
           <File className="h-4 w-4 text-green-500/60 shrink-0" />
         )}
@@ -153,13 +202,20 @@ function TreeNodeRow({
           </span>
         )}
 
+        {/* Drop indicator */}
+        {isDropHovered && !isEditing && (
+          <span className="text-amber-200 text-[0.6rem] tracking-wider uppercase glow-amber animate-pulse shrink-0 font-bold">
+            DROP IN
+          </span>
+        )}
+
         {/* Move mode indicator */}
-        {isBeingMoved && !isEditing && (
+        {isBeingMoved && !isEditing && !isDragging && (
           <span className="text-amber-400 text-[0.6rem] tracking-wider uppercase glow-amber animate-pulse shrink-0">
             MOVING
           </span>
         )}
-        {isDropTarget && !isEditing && (
+        {isClickDropTarget && !isDropHovered && !isEditing && (
           <span className="text-amber-300/80 text-[0.6rem] tracking-wider shrink-0">
             [drop here]
           </span>
@@ -194,7 +250,7 @@ function TreeNodeRow({
               <button
                 onClick={(e) => { e.stopPropagation(); setMovingId(node.id) }}
                 className="p-1 rounded hover:bg-amber-900/40 text-amber-300"
-                title="Move into another folder"
+                title="Move into another folder (click mode)"
               >
                 <Move className="h-3.5 w-3.5" />
               </button>
@@ -243,11 +299,73 @@ function TreeNodeRow({
       {node.type === 'folder' && node.isExpanded && node.children.length > 0 && (
         <div>
           {node.children.map((child) => (
-            <TreeNodeRow key={child.id} node={child} depth={depth + 1} />
+            <DraggableTreeNodeRow key={child.id} node={child} depth={depth + 1} />
           ))}
         </div>
       )}
     </>
+  )
+}
+
+// ─── Drag Overlay ──────────────────────────────────────────────────────
+
+function DragOverlayContent({ node }: { node: TreeNode | null }) {
+  if (!node) return null
+  return (
+    <div className="flex items-center gap-2 py-1.5 px-3 bg-[#1a2a1a] border border-amber-500/50 rounded shadow-[0_0_16px_rgba(255,179,71,0.3)]">
+      {node.type === 'folder' ? (
+        <Folder className="h-4 w-4 text-amber-400" />
+      ) : (
+        <File className="h-4 w-4 text-green-400" />
+      )}
+      <span className="text-sm font-mono text-amber-300 glow-amber">
+        {node.name}
+        {node.type === 'folder' && '/'}
+      </span>
+      <span className="text-[0.55rem] text-amber-500 tracking-wider uppercase">dropping...</span>
+    </div>
+  )
+}
+
+// ─── Root Drop Zone ────────────────────────────────────────────────────
+
+function RootDropZone({ rootName, onRootNameChange, isMoveMode, onDropAtRoot }: {
+  rootName: string
+  isMoveMode: boolean
+  onRootNameChange: (name: string) => void
+  onDropAtRoot: () => void
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'drop-root',
+    data: { isRoot: true },
+  })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`px-4 py-2 border-b flex items-center gap-2 transition-all ${
+        isOver
+          ? 'bg-amber-900/30 ring-2 ring-amber-400/60 shadow-[0_0_12px_rgba(255,179,71,0.2)]'
+          : isMoveMode
+          ? 'border-amber-700/40 bg-amber-900/10 hover:bg-amber-900/20 cursor-pointer'
+          : 'border-green-900/40'
+      }`}
+      onClick={() => { if (isMoveMode) onDropAtRoot() }}
+    >
+      <Folder className="h-4 w-4 text-amber-400" />
+      <span className="text-[0.65rem] text-green-600 font-mono tracking-wider shrink-0">ROOT:</span>
+      <Input
+        value={rootName}
+        onChange={(e) => onRootNameChange(e.target.value)}
+        className="h-6 text-sm font-mono bg-black/40 border-green-800/40 text-green-300 glow-green focus:border-amber-600/50 px-2"
+        onClick={(e) => { if (isMoveMode) { e.stopPropagation(); onDropAtRoot() } }}
+      />
+      {(isOver || isMoveMode) && (
+        <span className="text-[0.6rem] text-amber-400/80 font-mono shrink-0 glow-amber">
+          {isOver ? '[DROP HERE]' : '[drop at root]'}
+        </span>
+      )}
+    </div>
   )
 }
 
@@ -270,8 +388,43 @@ export default function Home() {
   const [showImport, setShowImport] = useState(false)
   const [importText, setImportText] = useState('')
   const [showOutput, setShowOutput] = useState(true)
+  const [activeDragNode, setActiveDragNode] = useState<TreeNode | null>(null)
 
   const treeText = generateFullTreeText(rootName, nodes)
+
+  // DnD sensors - require some movement before starting drag
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
+    })
+  )
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    const node = event.active.data.current?.node as TreeNode | undefined
+    if (node) setActiveDragNode(node)
+  }, [])
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event
+    setActiveDragNode(null)
+
+    if (!over) return
+
+    const draggedNodeId = active.id as string
+    const overData = over.data.current
+
+    // Dropped on root zone
+    if (overData?.isRoot) {
+      moveNodeTo(draggedNodeId, null)
+      return
+    }
+
+    // Dropped on a folder
+    const targetNode = overData?.node as TreeNode | undefined
+    if (targetNode && targetNode.type === 'folder') {
+      moveNodeTo(draggedNodeId, targetNode.id)
+    }
+  }, [moveNodeTo])
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(treeText)
@@ -354,7 +507,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <Move className="h-4 w-4 text-amber-400 animate-pulse" />
               <span className="text-xs font-mono text-amber-400 glow-amber tracking-wider">
-                MOVE MODE — click any folder to drop into it
+                MOVE MODE — click any folder to drop into it, or drag nodes directly
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -447,50 +600,46 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Root name — also acts as drop-to-root target */}
-            <div
-              className={`px-4 py-2 border-b flex items-center gap-2 transition-colors ${
-                movingId
-                  ? 'border-amber-700/40 bg-amber-900/10 hover:bg-amber-900/20 cursor-pointer'
-                  : 'border-green-900/40'
-              }`}
-              onClick={() => { if (movingId) handleMoveToRoot() }}
+            {/* DnD Context wrapping the tree area */}
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
             >
-              <Folder className="h-4 w-4 text-amber-400" />
-              <span className="text-[0.65rem] text-green-600 font-mono tracking-wider shrink-0">ROOT:</span>
-              <Input
-                value={rootName}
-                onChange={(e) => setRootName(e.target.value)}
-                className="h-6 text-sm font-mono bg-black/40 border-green-800/40 text-green-300 glow-green focus:border-amber-600/50 px-2"
-                onClick={(e) => { if (movingId) { e.stopPropagation(); handleMoveToRoot() } }}
+              {/* Root drop zone */}
+              <RootDropZone
+                rootName={rootName}
+                onRootNameChange={setRootName}
+                isMoveMode={movingId !== null}
+                onDropAtRoot={handleMoveToRoot}
               />
-              {movingId && (
-                <span className="text-[0.6rem] text-amber-400/80 font-mono shrink-0 glow-amber">
-                  [drop at root]
-                </span>
-              )}
-            </div>
 
-            {/* Tree content */}
-            <div className="flex-1 p-1 overflow-hidden">
-              <ScrollArea className="h-[calc(100vh-340px)] min-h-[280px]">
-                {nodes.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-green-700">
-                    <Folder className="h-12 w-12 mb-3 opacity-30" />
-                    <p className="text-sm font-mono glow-green tracking-wider">NO ITEMS LOADED</p>
-                    <p className="text-[0.65rem] mt-1 font-mono text-green-800">
-                      Click FOLDER or FILE above to begin
-                    </p>
-                  </div>
-                ) : (
-                  <div className="py-1">
-                    {nodes.map((node) => (
-                      <TreeNodeRow key={node.id} node={node} depth={1} />
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </div>
+              {/* Tree content */}
+              <div className="flex-1 p-1 overflow-hidden">
+                <ScrollArea className="h-[calc(100vh-340px)] min-h-[280px]">
+                  {nodes.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-green-700">
+                      <Folder className="h-12 w-12 mb-3 opacity-30" />
+                      <p className="text-sm font-mono glow-green tracking-wider">NO ITEMS LOADED</p>
+                      <p className="text-[0.65rem] mt-1 font-mono text-green-800">
+                        Click FOLDER or FILE above to begin
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="py-1">
+                      {nodes.map((node) => (
+                        <DraggableTreeNodeRow key={node.id} node={node} depth={1} />
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+
+              {/* Drag overlay — floating ghost of what you're dragging */}
+              <DragOverlay dropAnimation={null}>
+                <DragOverlayContent node={activeDragNode} />
+              </DragOverlay>
+            </DndContext>
           </div>
 
           {/* Right: Output */}
@@ -518,7 +667,6 @@ export default function Home() {
               {showOutput && (
                 <>
                   <div className="relative">
-                    {/* Terminal window chrome */}
                     <div className="flex items-center gap-1.5 mb-2">
                       <span className="w-2 h-2 rounded-full bg-red-500/60" />
                       <span className="w-2 h-2 rounded-full bg-amber-500/60" />
@@ -530,7 +678,6 @@ export default function Home() {
                     </pre>
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex items-center gap-2 mt-4">
                     <Button
                       size="sm"
@@ -538,15 +685,9 @@ export default function Home() {
                       className="flex-1 bg-green-900/40 border border-green-700/50 text-green-300 hover:bg-green-800/50 font-mono text-xs glow-green"
                     >
                       {copied ? (
-                        <>
-                          <Check className="h-3.5 w-3.5 mr-1.5" />
-                          COPIED!
-                        </>
+                        <><Check className="h-3.5 w-3.5 mr-1.5" />COPIED!</>
                       ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5 mr-1.5" />
-                          COPY TO CLIPBOARD
-                        </>
+                        <><Copy className="h-3.5 w-3.5 mr-1.5" />COPY TO CLIPBOARD</>
                       )}
                     </Button>
                     <Button
@@ -569,24 +710,25 @@ export default function Home() {
                     <ul className="text-[0.65rem] text-green-600 space-y-1.5 font-mono">
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">01</span>
-                        Click to select, double-click to rename
+                        Drag any node onto a folder to nest it inside
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">02</span>
-                        <Move className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
-                        Click the move icon to pick up a node
+                        Drag to the root bar to move to top level
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">03</span>
-                        Then click any folder to drop it inside — works at any depth
+                        <GripVertical className="h-3 w-3 text-green-400 mt-0.5 shrink-0" />
+                        Grab the grip handle on the left to start dragging
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">04</span>
-                        Click root name bar or MOVE TO ROOT to send to top level
+                        <Move className="h-3 w-3 text-amber-400 mt-0.5 shrink-0" />
+                        Or use the move icon for click-to-drop mode
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">05</span>
-                        Press Esc or click X to cancel a move
+                        Click to select, double-click to rename
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-amber-500 font-bold">06</span>
