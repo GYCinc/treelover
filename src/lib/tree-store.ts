@@ -423,6 +423,19 @@ export const TEMPLATES: ProjectTemplate[] = [
   },
 ]
 
+// ─── AI tree import helper ────────────────────────────────────────────
+
+export interface AiNodeDTO {
+  name: string
+  type: 'folder' | 'file'
+  children: AiNodeDTO[]
+}
+
+function dtoToTreeNode(dto: AiNodeDTO): TreeNode {
+  if (dto.type === 'file') return createFile(dto.name)
+  return createFolder(dto.name, (dto.children || []).map(c => dtoToTreeNode(c)))
+}
+
 // ─── Tree helpers ─────────────────────────────────────────────────────
 
 function findNodeById(nodes: TreeNode[], id: string): TreeNode | null {
@@ -516,6 +529,7 @@ interface TreeState {
   expandAll: () => void
   collapseAll: () => void
   clearAll: () => void
+  applyAiTree: (rootName: string, nodes: AiNodeDTO[]) => void
 }
 
 export const useTreeStore = create<TreeState>((set, get) => ({
@@ -772,5 +786,24 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     const newHistory = [...state.history, { nodes: [], rootName: state.rootName }]
     if (newHistory.length > MAX_HISTORY) newHistory.shift()
     set({ nodes: [], selectedId: null, editingId: null, movingId: null, history: newHistory, historyIndex: newHistory.length - 1 })
+  },
+
+  applyAiTree: (newRootName, dtoNodes) => {
+    const nodes = dtoNodes.map(n => dtoToTreeNode(n))
+    const state = get()
+    const newHistory = state.historyIndex < state.history.length - 1
+      ? state.history.slice(0, state.historyIndex + 1)
+      : [...state.history]
+    newHistory.push({ nodes: deepClone(state.nodes), rootName: state.rootName })
+    if (newHistory.length > MAX_HISTORY) newHistory.shift()
+    set({
+      rootName: newRootName || state.rootName,
+      nodes,
+      selectedId: null,
+      editingId: null,
+      movingId: null,
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+    })
   },
 }))

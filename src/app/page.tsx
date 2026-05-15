@@ -9,6 +9,7 @@ import {
   computeStats,
   TEMPLATES,
   type TreeNode,
+  type AiNodeDTO,
 } from '@/lib/tree-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -57,6 +58,8 @@ import {
   Layers,
   BookOpen,
   Calendar,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
 
 // ─── Export format type ──────────────────────────────────────────────
@@ -255,7 +258,7 @@ export default function Home() {
     rootName, nodes, movingId,
     setRootName, addNode, moveNodeTo, cancelMove, clearAll, importTree,
     loadTemplate, duplicateNode: _dup, undo, redo, canUndo, canRedo,
-    expandAll, collapseAll,
+    expandAll, collapseAll, applyAiTree,
   } = useTreeStore()
 
   const [copied, setCopied] = useState(false)
@@ -265,6 +268,9 @@ export default function Home() {
   const [showTemplates, setShowTemplates] = useState(false)
   const [exportFormat, setExportFormat] = useState<ExportFormat>('tree')
   const [activeDragNode, setActiveDragNode] = useState<TreeNode | null>(null)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -313,6 +319,45 @@ export default function Home() {
   }, [importText, importTree])
 
   const handleMoveToRoot = useCallback(() => { if (movingId) moveNodeTo(movingId, null) }, [movingId, moveNodeTo])
+
+  // Convert tree nodes to the minimal DTO format the AI expects
+  const treeToDto = useCallback((nodes: TreeNode[]): AiNodeDTO[] => {
+    return nodes.map(n => ({
+      name: n.name,
+      type: n.type,
+      children: n.type === 'folder' ? treeToDto(n.children) : [],
+    }))
+  }, [])
+
+  const handleAiSubmit = useCallback(async () => {
+    if (!aiPrompt.trim() || aiLoading) return
+    setAiLoading(true)
+    setAiError(null)
+    try {
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tree: treeToDto(nodes),
+          rootName,
+          prompt: aiPrompt.trim(),
+        }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setAiError(data.error)
+      } else if (data.nodes) {
+        applyAiTree(data.rootName || rootName, data.nodes)
+        setAiPrompt('')
+      } else {
+        setAiError('Unexpected response format')
+      }
+    } catch {
+      setAiError('Network error')
+    } finally {
+      setAiLoading(false)
+    }
+  }, [aiPrompt, aiLoading, nodes, rootName, treeToDto, applyAiTree])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -482,6 +527,28 @@ export default function Home() {
               </div>
               <DragOverlay dropAnimation={null}><DragOverlayContent node={activeDragNode} /></DragOverlay>
             </DndContext>
+
+            {/* AI Command Bar */}
+            <div className="border-t border-purple-800/40 bg-[#080b08] px-3 py-2">
+              <form onSubmit={(e) => { e.preventDefault(); handleAiSubmit() }}
+                className="flex items-center gap-2">
+                <Sparkles className={`h-3.5 w-3.5 shrink-0 ${aiLoading ? 'text-purple-300 animate-pulse' : 'text-purple-500'}`} />
+                <Input
+                  value={aiPrompt}
+                  onChange={(e) => { setAiPrompt(e.target.value); setAiError(null) }}
+                  placeholder="AI: add docker, make it a monorepo, suggest a blog layout..."
+                  disabled={aiLoading}
+                  className="h-7 text-xs font-mono bg-black/50 border-purple-800/40 text-purple-200 placeholder:text-purple-800 focus:border-purple-500/60 focus:ring-purple-500/20 px-2 flex-1 min-w-0"
+                />
+                <Button type="submit" size="sm" disabled={aiLoading || !aiPrompt.trim()}
+                  className="bg-purple-900/50 border border-purple-600/40 text-purple-200 hover:bg-purple-800/50 font-mono text-xs h-7 px-2.5 shrink-0 disabled:opacity-40">
+                  {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'GO'}
+                </Button>
+              </form>
+              {aiError && (
+                <p className="text-[0.55rem] text-red-400 font-mono mt-1 px-1">{aiError}</p>
+              )}
+            </div>
           </div>
 
           {/* Right: Output */}
