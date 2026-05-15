@@ -55,6 +55,7 @@ import {
   Braces,
   Hash,
   Layers,
+  BookOpen,
 } from 'lucide-react'
 
 // ─── Export format type ──────────────────────────────────────────────
@@ -364,12 +365,18 @@ export default function Home() {
         <div className="border-b border-amber-700/40 bg-[#0a0d0a]">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <p className="text-xs text-amber-400 mb-2 glow-amber font-mono tracking-wider">{'>'} LOAD A PROJECT TEMPLATE:</p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
               {TEMPLATES.map((t) => (
                 <button key={t.id} onClick={() => { loadTemplate(t.id); setShowTemplates(false) }}
-                  className="flex flex-col items-start p-2.5 rounded border border-green-800/40 hover:border-amber-600/50 hover:bg-amber-900/15 transition-colors text-left">
-                  <span className="text-xs font-mono text-amber-300 glow-amber">{t.name}</span>
-                  <span className="text-[0.55rem] font-mono text-green-700 mt-0.5">{t.description}</span>
+                  className={`flex flex-col items-start p-2.5 rounded border transition-colors text-left ${
+                    t.id === 'llm-wiki' ? 'border-amber-700/40 bg-amber-900/10 hover:border-amber-500/60 hover:bg-amber-900/25'
+                    : 'border-green-800/40 hover:border-amber-600/50 hover:bg-amber-900/15'
+                  }`}>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {t.id === 'llm-wiki' ? <BookOpen className="h-3 w-3 text-amber-400" /> : null}
+                    <span className={`text-xs font-mono ${t.id === 'llm-wiki' ? 'text-amber-200 glow-amber' : 'text-amber-300 glow-amber'}`}>{t.name}</span>
+                  </div>
+                  <span className="text-[0.55rem] font-mono text-green-700">{t.description}</span>
                 </button>
               ))}
             </div>

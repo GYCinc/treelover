@@ -312,6 +312,45 @@ export const TEMPLATES: ProjectTemplate[] = [
       createFile('README.md'),
     ],
   },
+  {
+    id: 'llm-wiki',
+    name: 'LLM Wiki',
+    description: 'Karpathy-style persistent knowledge wiki for agents',
+    rootName: 'llm-wiki',
+    nodes: [
+      createFolder('raw', [
+        createFolder('domain-1'),
+        createFolder('domain-2'),
+        createFolder('assets'),
+      ]),
+      createFolder('wiki', [
+        createFile('index.md'),
+        createFile('log.md'),
+        createFile('overview.md'),
+        createFolder('domain-1', [
+          createFile('overview.md'),
+          createFolder('sources'),
+          createFolder('concepts'),
+          createFolder('entities'),
+        ]),
+        createFolder('domain-2', [
+          createFile('overview.md'),
+          createFolder('sources'),
+          createFolder('concepts'),
+          createFolder('entities'),
+        ]),
+        createFolder('shared'),
+      ]),
+      createFolder('sessions', [
+        createFolder('exports'),
+        createFolder('confidential'),
+        createFolder('wiki-digests'),
+      ]),
+      createFile('AGENTS.md'),
+      createFile('.gitignore'),
+      createFile('README.md'),
+    ],
+  },
 ]
 
 // ─── Tree helpers ─────────────────────────────────────────────────────
