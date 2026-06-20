@@ -79,57 +79,10 @@ if [ -f "./next-service-dist/server.js" ]; then
         echo "🗄️  当前使用外部指定数据库: $DATABASE_URL"
     fi
     
-    # 后台启动 Next.js
-    bun server.js &
-    NEXT_PID=$!
-    pids="$NEXT_PID"
-    
-    # 等待一小段时间检查进程是否成功启动
-    sleep 1
-    if ! kill -0 "$NEXT_PID" 2>/dev/null; then
-        echo "❌ Next.js 服务器启动失败"
-        exit 1
-    else
-        echo "✅ Next.js 服务器已启动 (PID: $NEXT_PID, Port: $PORT)"
-    fi
-    
-    cd ../
+    # 前台启动 Next.js 作为主进程
+    echo "🚀 Next.js 服务器将作为主进程运行..."
+    exec bun server.js
 else
     echo "⚠️  未找到 Next.js 服务器文件: ./next-service-dist/server.js"
+    exit 1
 fi
-
-# 启动 mini-services
-if [ -f "./mini-services-start.sh" ]; then
-    echo "🚀 启动 mini-services..."
-    
-    # 运行启动脚本（从根目录运行，脚本内部会处理 mini-services-dist 目录）
-    sh ./mini-services-start.sh &
-    MINI_PID=$!
-    pids="$pids $MINI_PID"
-    
-    # 等待一小段时间检查进程是否成功启动
-    sleep 1
-    if ! kill -0 "$MINI_PID" 2>/dev/null; then
-        echo "⚠️  mini-services 可能启动失败，但继续运行..."
-    else
-        echo "✅ mini-services 已启动 (PID: $MINI_PID)"
-    fi
-elif [ -d "./mini-services-dist" ]; then
-    echo "⚠️  未找到 mini-services 启动脚本，但目录存在"
-else
-    echo "ℹ️  mini-services 目录不存在，跳过"
-fi
-
-# 启动 Caddy（如果存在 Caddyfile）
-echo "🚀 启动 Caddy..."
-
-# Caddy 作为前台进程运行（主进程）
-echo "✅ Caddy 已启动（前台运行）"
-echo ""
-echo "🎉 所有服务已启动！"
-echo ""
-echo "💡 按 Ctrl+C 停止所有服务"
-echo ""
-
-# Caddy 作为主进程运行
-exec caddy run --config Caddyfile --adapter caddyfile

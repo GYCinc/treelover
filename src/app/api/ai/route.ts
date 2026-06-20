@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import ZAI from 'z-ai-web-dev-sdk'
 
 interface TreeNodeDTO {
   name: string
@@ -15,7 +14,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'prompt is required' }, { status: 400 })
     }
 
-    const zai = await ZAI.create()
+    const apiKey = process.env.DEEPSEEK_API_KEY
+    if (!apiKey) {
+      return NextResponse.json({ error: 'DEEPSEEK_API_KEY not configured' }, { status: 500 })
+    }
 
     const systemPrompt = `You are a folder structure architect. You receive a JSON tree and a user instruction. You respond with ONLY the modified tree JSON — no explanations, no markdown, no code fences, no chat.
 
@@ -40,15 +42,32 @@ Instruction: ${prompt}
 
 Respond with the complete modified tree as JSON. Format: { "rootName": "...", "nodes": [ ... ] }`
 
-    const completion = await zai.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userContent },
-      ],
-      temperature: 0.7,
-      max_tokens: 4096,
+    const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent },
+        ],
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
     })
 
+    if (!response.ok) {
+      const errorText = await response.text()
+      return NextResponse.json(
+        { error: `DeepSeek API error: ${response.status}`, details: errorText },
+        { status: 502 }
+      )
+    }
+
+    const completion = await response.json()
     let text = completion.choices?.[0]?.message?.content || ''
 
     // Strip markdown code fences if the model wraps them

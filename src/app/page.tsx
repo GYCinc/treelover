@@ -60,11 +60,12 @@ import {
   Calendar,
   Sparkles,
   Loader2,
+  FolderOpen,
 } from 'lucide-react'
 
 // ─── Export format type ──────────────────────────────────────────────
 
-type ExportFormat = 'tree' | 'mkdir' | 'json'
+type ExportFormat = 'tree' | 'mkdir' | 'json' | 'script'
 
 // ─── Draggable Tree Node ──────────────────────────────────────────────
 
@@ -210,6 +211,32 @@ function DragOverlayContent({ node }: { node: TreeNode | null }) {
   )
 }
 
+// ─── File System Scanner ───────────────────────────────────────────────
+
+interface FsNode {
+  name: string
+  type: 'folder' | 'file'
+  children: FsNode[]
+}
+
+async function scanDirectory(dirHandle: FileSystemDirectoryHandle): Promise<FsNode[]> {
+  const nodes: FsNode[] = []
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (name.startsWith('.') && name !== '.github' && name !== '.vscode') continue
+    if (handle.kind === 'directory') {
+      const children = await scanDirectory(handle)
+      nodes.push({ name, type: 'folder', children })
+    } else {
+      nodes.push({ name, type: 'file', children: [] })
+    }
+  }
+  nodes.sort((a, b) => {
+    if (a.type === b.type) return a.name.localeCompare(b.name)
+    return a.type === 'folder' ? -1 : 1
+  })
+  return nodes
+}
+
 // ─── Root Drop Zone ────────────────────────────────────────────────────
 
 function RootDropZone({ rootName, onRootNameChange, isMoveMode, onDropAtRoot }: {
@@ -271,6 +298,12 @@ export default function Home() {
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [aiResults, setAiResults] = useState<{
+    analysis: string
+    proposed: { rootName: string; nodes: AiNodeDTO[] } | null
+    verification: { safe: boolean; issues: string[]; confidence: number }
+    showPanel: boolean
+  } | null>(null)
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
@@ -320,6 +353,19 @@ export default function Home() {
 
   const handleMoveToRoot = useCallback(() => { if (movingId) moveNodeTo(movingId, null) }, [movingId, moveNodeTo])
 
+  const handleSelectFolder = useCallback(async () => {
+    try {
+      // @ts-ignore — showDirectoryPicker is not in all TS DOM libs
+      const dirHandle = await window.showDirectoryPicker()
+      const scanned = await scanDirectory(dirHandle)
+      applyAiTree(dirHandle.name, scanned)
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name !== 'AbortError') {
+        setAiError(err.message)
+      }
+    }
+  }, [applyAiTree])
+
   // Convert tree nodes to the minimal DTO format the AI expects
   const treeToDto = useCallback((nodes: TreeNode[]): AiNodeDTO[] => {
     return nodes.map(n => ({
@@ -333,8 +379,9 @@ export default function Home() {
     if (!aiPrompt.trim() || aiLoading) return
     setAiLoading(true)
     setAiError(null)
+    setAiResults(null)
     try {
-      const res = await fetch('/api/ai', {
+      const res = await fetch('/api/orchestrate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -346,18 +393,52 @@ export default function Home() {
       const data = await res.json()
       if (data.error) {
         setAiError(data.error)
-      } else if (data.nodes) {
-        applyAiTree(data.rootName || rootName, data.nodes)
-        setAiPrompt('')
       } else {
-        setAiError('Unexpected response format')
+        setAiResults({
+          analysis: data.analysis || '',
+          proposed: data.proposed,
+          verification: data.verification || { safe: false, issues: [], confidence: 0 },
+          showPanel: true,
+        })
       }
     } catch {
       setAiError('Network error')
     } finally {
       setAiLoading(false)
     }
-  }, [aiPrompt, aiLoading, nodes, rootName, treeToDto, applyAiTree])
+  }, [aiPrompt, aiLoading, nodes, rootName, treeToDto])
+
+  const handleApplyProposed = useCallback(() => {
+    if (aiResults?.proposed?.nodes) {
+      applyAiTree(aiResults.proposed.rootName || rootName, aiResults.proposed.nodes)
+      setAiResults(null)
+      setAiPrompt('')
+    }
+  }, [aiResults, rootName, applyAiTree])
+
+  const handleGenerateScript = useCallback(async () => {
+    try {
+      const res = await fetch('/api/generate-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootName, nodes: treeToDto(nodes) }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setAiError(data.error)
+        return
+      }
+      const blob = new Blob([data.script], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = data.filename || 'reorganize.sh'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      setAiError('Failed to generate script')
+    }
+  }, [rootName, nodes, treeToDto])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -397,6 +478,10 @@ export default function Home() {
             <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)}
               className="border-green-700/50 text-green-400 hover:bg-green-900/30 bg-transparent font-mono text-xs">
               <Upload className="h-3.5 w-3.5 mr-1.5" />IMPORT
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSelectFolder}
+              className="border-green-700/50 text-green-400 hover:bg-green-900/30 bg-transparent font-mono text-xs">
+              <FolderOpen className="h-3.5 w-3.5 mr-1.5" />SELECT FOLDER
             </Button>
             <Button variant="outline" size="sm" onClick={clearAll}
               className="border-red-800/50 text-red-400 hover:bg-red-900/30 bg-transparent font-mono text-xs">
@@ -549,6 +634,44 @@ export default function Home() {
                 <p className="text-[0.55rem] text-red-400 font-mono mt-1 px-1">{aiError}</p>
               )}
             </div>
+
+            {/* Orchestration Results Panel */}
+            {aiResults?.showPanel && (
+              <div className="border-t border-purple-800/40 bg-[#080b08] px-3 py-2 max-h-64 overflow-y-auto">
+                {/* Analyzer */}
+                <div className="mb-2">
+                  <p className="text-[0.6rem] font-bold text-purple-400 uppercase tracking-wider mb-1">{'>'} Analyzer</p>
+                  <pre className="text-[0.6rem] text-purple-300 font-mono whitespace-pre-wrap leading-relaxed">{aiResults.analysis}</pre>
+                </div>
+                {/* Verifier */}
+                <div className="mb-2">
+                  <p className="text-[0.6rem] font-bold text-purple-400 uppercase tracking-wider mb-1">{'>'} Verifier</p>
+                  <div className={`text-[0.6rem] font-mono ${aiResults.verification.safe ? 'text-green-400' : 'text-amber-400'}`}>
+                    Safe: {aiResults.verification.safe ? 'YES' : 'NO'}
+                    {aiResults.verification.issues.length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {aiResults.verification.issues.map((issue, i) => (
+                          <li key={i}>• {issue}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+                {/* Apply button */}
+                {aiResults.proposed?.nodes && (
+                  <div className="flex gap-2 mt-2">
+                    <Button size="sm" onClick={handleApplyProposed}
+                      className="bg-purple-900/50 border border-purple-600/40 text-purple-200 hover:bg-purple-800/50 font-mono text-xs h-7">
+                      APPLY PROPOSED TREE
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setAiResults(null)}
+                      className="text-green-600 hover:text-green-400 hover:bg-green-900/20 font-mono text-xs h-7">
+                      [DISMISS]
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: Output */}
@@ -564,6 +687,7 @@ export default function Home() {
                   { key: 'tree' as ExportFormat, icon: FileCode, label: 'Tree' },
                   { key: 'mkdir' as ExportFormat, icon: Terminal, label: 'mkdir' },
                   { key: 'json' as ExportFormat, icon: Braces, label: 'JSON' },
+                  { key: 'script' as ExportFormat, icon: Download, label: 'Script' },
                 ]).map(({ key, icon: Icon, label }) => (
                   <Button key={key} variant="ghost" size="sm"
                     onClick={() => setExportFormat(key)}
@@ -605,6 +729,10 @@ export default function Home() {
                     <Button variant="outline" size="sm" onClick={handleDownload} disabled={nodes.length === 0}
                       className="border-amber-700/50 text-amber-400 hover:bg-amber-900/30 bg-transparent font-mono text-xs">
                       <Download className="h-3.5 w-3.5 mr-1.5" />DOWNLOAD
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleGenerateScript} disabled={nodes.length === 0}
+                      className="border-purple-700/50 text-purple-400 hover:bg-purple-900/30 bg-transparent font-mono text-xs">
+                      <Terminal className="h-3.5 w-3.5 mr-1.5" />SCRIPT
                     </Button>
                   </div>
 

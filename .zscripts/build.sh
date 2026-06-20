@@ -92,14 +92,6 @@ else
     exit 1
 fi
 
-# 复制 Caddyfile（如果存在）
-if [ -f "Caddyfile" ]; then
-    echo "  - 复制 Caddyfile"
-    cp Caddyfile "$BUILD_DIR/"
-else
-    echo "ℹ️  Caddyfile 不存在，跳过"
-fi
-
 # 复制 start.sh 脚本
 echo "  - 复制 start.sh 到 $BUILD_DIR"
 cp "$SCRIPT_DIR/start.sh" "$BUILD_DIR/start.sh"
