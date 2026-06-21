@@ -5,7 +5,7 @@ This specification details the design of a custom Waybar module integrated with 
 
 ## Architecture & Components
 
-### 1. Wofi Launcher Script (`/home/hayron/launch-menu.sh`)
+### 1. Wofi Launcher Script (`/home/hayron/.local/bin/launch-menu.sh`)
 The script is responsible for:
 - Declaring a list of hardcoded local programs, their ports, and their start commands:
   ```bash
@@ -14,7 +14,7 @@ The script is responsible for:
     "ZZZlides|2828|cosmic-term -- bash -c 'cd /home/hayron/MyProjects/ZZZlides && bash launch.sh'"
   )
   ```
-- Reading active TCP listening ports from `/home/hayron/localports once`.
+- Reading active TCP listening ports from `/home/hayron/.local/bin/localports once`.
 - Determining the status of each hardcoded program (Online if its port is active, Offline otherwise).
 - Generating a Wofi menu with:
   - `🟢 <Name> (Online - Port <port>)` for online hardcoded programs.
@@ -41,7 +41,7 @@ We define a static custom module `"custom/localports"` that runs the Wofi launch
 ```jsonc
 "custom/localports": {
   "format": "🔌 Ports",
-  "on-click": "/home/hayron/launch-menu.sh",
+  "on-click": "/home/hayron/.local/bin/launch-menu.sh",
   "tooltip": false
 }
 ```
@@ -51,7 +51,7 @@ We define a static custom module `"custom/localports"` that runs the Wofi launch
 - `/home/hayron/.config/waybar/config` (appended to `modules-left` next to `"custom/launcher"`)
 
 ## Success Criteria & Testing
-1. **Status Checking:** Verify `/home/hayron/localports once` successfully detects port statuses.
+1. **Status Checking:** Verify `/home/hayron/.local/bin/localports once` successfully detects port statuses.
 2. **Offline Launching:** Selecting `🔴 Tree Architect` or `🔴 ZZZlides` correctly triggers their start commands in a `cosmic-term` terminal window.
 3. **Online Browser Launch:** Selecting an active port opens `http://localhost:<port>` in the default browser.
 4. **Waybar Clickability:** Verify clicking "🔌 Ports" in Waybar pops up the Wofi window successfully.

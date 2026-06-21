@@ -4,7 +4,7 @@
 
 **Goal:** Create a status-aware Waybar custom module and Wofi launcher script that displays hardcoded local port programs (Tree Architect, ZZZlides) as Online or Offline, checks active ports via `localports once`, lists other active TCP ports dynamically, and runs appropriate browser-open or server-launch commands.
 
-**Architecture:** A lightweight bash wrapper script (`launch-menu.sh`) queries port lists, matches against static declarations, displays statuses in a Catppuccin-styled Wofi list, and executes background launch processes (`cosmic-term` commands) or browser-opens (`xdg-open`). A custom module binds this to the Waybar panel.
+**Architecture:** A lightweight bash wrapper script (`/home/hayron/.local/bin/launch-menu.sh`) queries port lists, matches against static declarations, displays statuses in a Catppuccin-styled Wofi list, and executes background launch processes (`cosmic-term` commands) or browser-opens (`xdg-open`). A custom module binds this to the Waybar panel.
 
 **Tech Stack:** Bash, Wofi, Waybar, System76 COSMIC Desktop Environment (on Fedora).
 
@@ -85,10 +85,10 @@
 ### Task 2: Live Status Wofi Launcher Script
 
 **Files:**
-- Modify: `/home/hayron/launch-menu.sh`
+- Modify: `/home/hayron/.local/bin/launch-menu.sh`
 
 - [ ] **Step 1: Replace launch-menu.sh contents**
-  Write the status-checking launcher logic to `/home/hayron/launch-menu.sh`.
+  Write the status-checking launcher logic to `/home/hayron/.local/bin/launch-menu.sh`.
   
   ```bash
   #!/usr/bin/env bash
@@ -105,7 +105,7 @@
   )
 
   # Check active ports using localports utility (disables color because of non-TTY subshell)
-  ACTIVE_PORTS_RAW=$(/home/hayron/localports once 2>/dev/null)
+  ACTIVE_PORTS_RAW=$(/home/hayron/.local/bin/localports once 2>/dev/null)
 
   # Function to check if a port is active
   is_port_active() {
@@ -178,7 +178,7 @@
   ```
 
 - [ ] **Step 2: Make launcher executable**
-  Run: `chmod +x /home/hayron/launch-menu.sh`
+  Run: `chmod +x /home/hayron/.local/bin/launch-menu.sh`
 
 ---
 
@@ -204,7 +204,7 @@
   ```json
     "custom/localports": {
       "format": "🔌 Ports",
-      "on-click": "/home/hayron/launch-menu.sh",
+      "on-click": "/home/hayron/.local/bin/launch-menu.sh",
       "tooltip": false
     },
   ```
@@ -225,7 +225,7 @@
   ```json
       "custom/localports": {
         "format": "🔌 Ports",
-        "on-click": "/home/hayron/launch-menu.sh",
+        "on-click": "/home/hayron/.local/bin/launch-menu.sh",
         "tooltip": false
       },
   ```
