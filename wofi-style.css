@@ -1,0 +1,48 @@
+/* Sleek, Modern Dark Theme for Wofi */
+window {
+    margin: 0px;
+    border: 1px solid #313244; /* Subtle dark border */
+    background-color: #1e1e2e; /* Catppuccin dark gray/blue */
+    font-family: "Courier New", monospace;
+    font-size: 13px;
+    border-radius: 8px;
+}
+
+#input {
+    margin: 8px;
+    border: 1px solid #45475a;
+    color: #cdd6f4;
+    background-color: #11111b;
+    border-radius: 4px;
+    padding: 6px;
+}
+
+#inner-box {
+    margin: 5px;
+    background-color: #1e1e2e;
+    color: #cdd6f4;
+}
+
+#outer-box {
+    margin: 5px;
+    background-color: #1e1e2e;
+}
+
+#scroll {
+    margin: 5px;
+}
+
+#text {
+    margin: 5px;
+    color: #cdd6f4;
+}
+
+#entry:selected {
+    background-color: #89b4fa; /* Clean blue highlight */
+    color: #11111b;
+    border-radius: 4px;
+}
+
+#text:selected {
+    color: #11111b;
+}
