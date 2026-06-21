@@ -544,6 +544,7 @@ interface TreeState {
   selectedId: string | null
   editingId: string | null
   movingId: string | null
+  originalSnapshot: { rootName: string; nodes: TreeNode[] } | null
 
   // History
   history: HistoryEntry[]
@@ -571,7 +572,82 @@ interface TreeState {
   expandAll: () => void
   collapseAll: () => void
   clearAll: () => void
-  applyAiTree: (rootName: string, nodes: AiNodeDTO[]) => void
+  applyAiTree: (rootName: string, nodes: AiNodeDTO[], isImport?: boolean) => void
+}
+
+interface FlattenedNode {
+  id: string
+  name: string
+  type: 'folder' | 'file'
+  path: string
+}
+
+function flattenTree(nodes: TreeNode[], currentPath: string = ''): FlattenedNode[] {
+  const result: FlattenedNode[] = []
+  for (const node of nodes) {
+    const relativePath = currentPath ? `${currentPath}/${node.name}` : node.name
+    result.push({
+      id: node.id,
+      name: node.name,
+      type: node.type,
+      path: relativePath
+    })
+    if (node.type === 'folder' && node.children.length > 0) {
+      result.push(...flattenTree(node.children, relativePath))
+    }
+  }
+  return result
+}
+
+function matchDtoToTree(
+  dto: AiNodeDTO,
+  oldFlattened: FlattenedNode[],
+  claimedIds: Set<string>,
+  parentPath: string = ''
+): TreeNode {
+  const currentPath = parentPath ? `${parentPath}/${dto.name}` : dto.name
+  let matchedId: string | null = null
+
+  // 1. Exact path match
+  const exactMatch = oldFlattened.find(
+    o => o.path === currentPath && o.type === dto.type && !claimedIds.has(o.id)
+  )
+  if (exactMatch) {
+    matchedId = exactMatch.id
+  } else {
+    // 2. Name-based match
+    const nameMatches = oldFlattened.filter(
+      o => o.name.toLowerCase() === dto.name.toLowerCase() && o.type === dto.type && !claimedIds.has(o.id)
+    )
+    if (nameMatches.length > 0) {
+      matchedId = nameMatches[0].id
+    }
+  }
+
+  const id = matchedId || genId()
+  if (matchedId) claimedIds.add(matchedId)
+
+  if (dto.type === 'file') {
+    return {
+      id,
+      name: dto.name,
+      type: 'file',
+      children: [],
+      isExpanded: false
+    }
+  }
+
+  const children = (dto.children || []).map(c =>
+    matchDtoToTree(c, oldFlattened, claimedIds, currentPath)
+  )
+
+  return {
+    id,
+    name: dto.name,
+    type: 'folder',
+    children,
+    isExpanded: true
+  }
 }
 
 export const useTreeStore = create<TreeState>((set, get) => ({
@@ -580,6 +656,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   selectedId: null,
   editingId: null,
   movingId: null,
+  originalSnapshot: null,
   history: [],
   historyIndex: -1,
 
@@ -777,7 +854,16 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     const state = get()
     const newHistory = [...state.history, { nodes: deepClone(nodes), rootName }]
     if (newHistory.length > MAX_HISTORY) newHistory.shift()
-    set({ rootName, nodes, selectedId: null, editingId: null, movingId: null, history: newHistory, historyIndex: newHistory.length - 1 })
+    set({
+      rootName,
+      nodes,
+      originalSnapshot: { rootName, nodes: deepClone(nodes) },
+      selectedId: null,
+      editingId: null,
+      movingId: null,
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+    })
   },
 
   loadTemplate: (templateId) => {
@@ -791,6 +877,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     set({
       rootName: template.rootName,
       nodes,
+      originalSnapshot: null,
       selectedId: null,
       editingId: null,
       movingId: null,
@@ -830,17 +917,28 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     set({ nodes: [], selectedId: null, editingId: null, movingId: null, history: newHistory, historyIndex: newHistory.length - 1 })
   },
 
-  applyAiTree: (newRootName, dtoNodes) => {
-    const nodes = dtoNodes.map(n => dtoToTreeNode(n))
+  applyAiTree: (newRootName, dtoNodes, isImport) => {
     const state = get()
+    let nodes: TreeNode[]
+    
+    if (isImport) {
+      nodes = dtoNodes.map(n => dtoToTreeNode(n))
+    } else {
+      const oldFlattened = flattenTree(state.nodes)
+      const claimedIds = new Set<string>()
+      nodes = dtoNodes.map(n => matchDtoToTree(n, oldFlattened, claimedIds))
+    }
+    
     const newHistory = state.historyIndex < state.history.length - 1
       ? state.history.slice(0, state.historyIndex + 1)
       : [...state.history]
     newHistory.push({ nodes: deepClone(state.nodes), rootName: state.rootName })
     if (newHistory.length > MAX_HISTORY) newHistory.shift()
+    
     set({
       rootName: newRootName || state.rootName,
       nodes,
+      originalSnapshot: isImport ? { rootName: newRootName || state.rootName, nodes: deepClone(nodes) } : state.originalSnapshot,
       selectedId: null,
       editingId: null,
       movingId: null,
