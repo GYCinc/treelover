@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# 配置项
-ROOT_DIR="/home/z/my-project/mini-services"
-DIST_DIR="/tmp/build_fullstack_$BUILD_ID/mini-services-dist"
+# 获取脚本所在目录并动态计算 mini-services 路径
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../mini-services" && pwd 2>/dev/null || echo "$SCRIPT_DIR/../mini-services")"
+DIST_DIR="/tmp/build_fullstack_${BUILD_ID:-test_build}/mini-services-dist"
 
 main() {
     echo "🚀 开始批量构建..."

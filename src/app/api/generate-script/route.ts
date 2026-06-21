@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
       ``,
       `echo "=== DRY RUN ==="`,
       `echo "Target structure:"`,
-      ...generateDryRun(nodes, '\${TARGET_ROOT}').map(l => `echo "${l}"`),
+      ...generateDryRun(nodes, '${TARGET_ROOT}').map(l => `echo "${l}"`),
     ]
 
     if (hasOriginal) {
@@ -227,9 +227,9 @@ export async function POST(req: NextRequest) {
     )
 
     if (hasOriginal) {
-      lines.push(...generateTransitionCommands(nodes, '\${TARGET_ROOT}', '${SOURCE_PATH}', origPathMap))
+      lines.push(...generateTransitionCommands(nodes, '${TARGET_ROOT}', '${SOURCE_PATH}', origPathMap))
     } else {
-      lines.push(...generateCommands(nodes, '\${TARGET_ROOT}', '${SOURCE_PATH}'))
+      lines.push(...generateCommands(nodes, '${TARGET_ROOT}', '${SOURCE_PATH}'))
     }
 
     lines.push(
