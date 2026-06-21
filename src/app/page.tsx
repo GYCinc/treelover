@@ -285,7 +285,7 @@ export default function Home() {
     rootName, nodes, movingId,
     setRootName, addNode, moveNodeTo, cancelMove, clearAll, importTree,
     loadTemplate, duplicateNode: _dup, undo, redo, canUndo, canRedo,
-    expandAll, collapseAll, applyAiTree,
+    expandAll, collapseAll, applyAiTree, originalSnapshot,
   } = useTreeStore()
 
   const [copied, setCopied] = useState(false)
@@ -358,7 +358,7 @@ export default function Home() {
       // @ts-ignore — showDirectoryPicker is not in all TS DOM libs
       const dirHandle = await window.showDirectoryPicker()
       const scanned = await scanDirectory(dirHandle)
-      applyAiTree(dirHandle.name, scanned)
+      applyAiTree(dirHandle.name, scanned, true) // Pass true for isImport!
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== 'AbortError') {
         setAiError(err.message)
@@ -421,7 +421,14 @@ export default function Home() {
       const res = await fetch('/api/generate-script', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rootName, nodes: treeToDto(nodes) }),
+        body: JSON.stringify({
+          rootName,
+          nodes, // Send full nodes (with IDs)
+          originalSnapshot: originalSnapshot ? {
+            rootName: originalSnapshot.rootName,
+            nodes: originalSnapshot.nodes
+          } : null
+        }),
       })
       const data = await res.json()
       if (data.error) {
@@ -438,7 +445,7 @@ export default function Home() {
     } catch {
       setAiError('Failed to generate script')
     }
-  }, [rootName, nodes, treeToDto])
+  }, [rootName, nodes, originalSnapshot])
 
   // Keyboard shortcuts
   useEffect(() => {
