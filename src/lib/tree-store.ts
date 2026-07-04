@@ -527,6 +527,8 @@ function cloneWithNewIds(node: TreeNode): TreeNode {
   return createFolder(node.name, node.children.map(c => cloneWithNewIds(c)))
 }
 
+import { z } from 'zod'
+
 // ─── History for undo/redo ────────────────────────────────────────────
 
 interface HistoryEntry {
@@ -535,6 +537,30 @@ interface HistoryEntry {
 }
 
 const MAX_HISTORY = 50
+
+// ─── Zod Schemas for secure validation ────────────────────────────────
+export const ZTreeNodeSchema: z.ZodType<TreeNode> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    name: z.string(),
+    type: z.enum(['folder', 'file']),
+    children: z.array(ZTreeNodeSchema),
+    isExpanded: z.boolean(),
+  })
+)
+
+export const ZSnapshotSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  timestamp: z.number(),
+  rootName: z.string(),
+  nodes: z.array(ZTreeNodeSchema),
+})
+
+export type LocalSnapshot = z.infer<typeof ZSnapshotSchema>
+
+// ─── Theme types ──────────────────────────────────────────────────────
+export type ThemeName = 'green' | 'amber' | 'blue' | 'classic' | 'cyber-glass' | 'nord-light' | 'nord-dark'
 
 // ─── Store ────────────────────────────────────────────────────────────
 
@@ -545,6 +571,16 @@ interface TreeState {
   editingId: string | null
   movingId: string | null
   originalSnapshot: { rootName: string; nodes: TreeNode[] } | null
+  
+  // Theme state
+  theme: ThemeName
+  setTheme: (theme: ThemeName) => void
+
+  // Snapshot actions and state
+  snapshots: LocalSnapshot[]
+  createSnapshot: (name: string) => void
+  restoreSnapshot: (id: string) => void
+  deleteSnapshot: (id: string) => void
 
   // History
   history: HistoryEntry[]
@@ -657,8 +693,64 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   editingId: null,
   movingId: null,
   originalSnapshot: null,
+  theme: (typeof window !== 'undefined' ? (localStorage.getItem('tree-theme') as ThemeName) : 'green') || 'green',
+  snapshots: [], // Will load on mount to handle hydration
   history: [],
   historyIndex: -1,
+
+  setTheme: (theme) => {
+    set({ theme })
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tree-theme', theme)
+      document.documentElement.setAttribute('data-theme', theme)
+    }
+  },
+
+  createSnapshot: (name) => {
+    const { rootName, nodes, snapshots } = get()
+    const newSnapshot: LocalSnapshot = {
+      id: `snap-${Date.now()}`,
+      name: name.trim() || `Snapshot ${new Date().toLocaleTimeString()}`,
+      timestamp: Date.now(),
+      rootName,
+      nodes: deepClone(nodes)
+    }
+    const updated = [newSnapshot, ...snapshots]
+    set({ snapshots: updated })
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tree-snapshots', JSON.stringify(updated))
+    }
+  },
+
+  restoreSnapshot: (id) => {
+    const { snapshots, history, historyIndex } = get()
+    const found = snapshots.find(s => s.id === id)
+    if (!found) return
+    const clonedNodes = deepClone(found.nodes)
+    const newHistory = historyIndex < history.length - 1
+      ? history.slice(0, historyIndex + 1)
+      : [...history]
+    newHistory.push({ nodes: deepClone(clonedNodes), rootName: found.rootName })
+    if (newHistory.length > MAX_HISTORY) newHistory.shift()
+    set({
+      rootName: found.rootName,
+      nodes: clonedNodes,
+      selectedId: null,
+      editingId: null,
+      movingId: null,
+      history: newHistory,
+      historyIndex: newHistory.length - 1
+    })
+  },
+
+  deleteSnapshot: (id) => {
+    const { snapshots } = get()
+    const updated = snapshots.filter(s => s.id !== id)
+    set({ snapshots: updated })
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tree-snapshots', JSON.stringify(updated))
+    }
+  },
 
   canUndo: () => get().historyIndex > 0,
   canRedo: () => get().historyIndex < get().history.length - 1,

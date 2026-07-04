@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { z } from 'zod'
 import {
   useTreeStore,
   generateFullTreeText,
@@ -8,8 +9,10 @@ import {
   generateJsonStructure,
   computeStats,
   TEMPLATES,
+  ZSnapshotSchema,
   type TreeNode,
   type AiNodeDTO,
+  type ThemeName,
 } from '@/lib/tree-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -447,6 +450,37 @@ export default function Home() {
     }
   }, [rootName, nodes, originalSnapshot])
 
+  const {
+    theme, setTheme, snapshots, createSnapshot, restoreSnapshot, deleteSnapshot
+  } = useTreeStore()
+
+  const [snapshotName, setSnapshotName] = useState('')
+  const [showSnapshots, setShowSnapshots] = useState(false)
+
+  // Hydrate snapshots and theme client-side to prevent SSR mismatch
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedTheme = localStorage.getItem('tree-theme') as ThemeName | null
+      if (storedTheme) {
+        setTheme(storedTheme)
+      } else {
+        setTheme('green')
+      }
+      
+      const storedSnaps = localStorage.getItem('tree-snapshots')
+      if (storedSnaps) {
+        try {
+          const parsed = JSON.parse(storedSnaps)
+          // Validate using Zod schema for safety
+          const validated = z.array(ZSnapshotSchema).parse(parsed)
+          useTreeStore.setState({ snapshots: validated })
+        } catch (e) {
+          console.error("Failed to load/validate local snapshots:", e)
+        }
+      }
+    }
+  }, [setTheme])
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -457,15 +491,21 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [undo, redo, canUndo, canRedo])
 
+  const isCrtTheme = theme === 'green' || theme === 'amber' || theme === 'blue' || theme === 'classic'
+
   return (
-    <div className="min-h-screen bg-[#0c0f0c] crt-flicker patina-grid">
-      <div className="crt-scanlines" />
-      <div className="crt-scanline-bar" />
-      <div className="crt-vignette" />
+    <div className={`min-h-screen bg-[#0c0f0c] ${isCrtTheme ? 'crt-flicker patina-grid' : ''}`} data-theme={theme}>
+      {isCrtTheme && (
+        <>
+          <div className="crt-scanlines" />
+          <div className="crt-scanline-bar" />
+          <div className="crt-vignette" />
+        </>
+      )}
 
       {/* Header */}
       <header className="border-b border-green-800/60 bg-[#0a0d0a]">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="p-2 border border-amber-700/50 rounded bg-amber-900/20">
               <Terminal className="h-5 w-5 text-amber-400 glow-amber-pulse" />
@@ -477,7 +517,29 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center flex-wrap gap-1.5">
+            {/* Theme selector */}
+            <div className="flex items-center gap-1 border border-green-900/40 px-2 py-0.5 rounded mr-1 flex-wrap">
+              <span className="text-[0.65rem] text-green-700 font-mono tracking-wider mr-1">THEME:</span>
+              {(['green', 'amber', 'blue', 'classic', 'cyber-glass', 'nord-dark', 'nord-light'] as ThemeName[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTheme(t)}
+                  className={`text-[0.6rem] px-1.5 py-0.5 font-mono uppercase rounded transition-colors ${
+                    theme === t
+                      ? 'bg-green-900/30 text-green-400 border border-green-500/40 glow-green font-bold'
+                      : 'text-green-700 hover:text-green-500'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            
+            <Button variant="outline" size="sm" onClick={() => setShowSnapshots(!showSnapshots)}
+              className="border-purple-700/50 text-purple-400 hover:bg-purple-900/30 bg-transparent font-mono text-xs">
+              <Layers className="h-3.5 w-3.5 mr-1.5" />SNAPSHOTS ({snapshots.length})
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowTemplates(!showTemplates)}
               className="border-amber-700/50 text-amber-400 hover:bg-amber-900/30 bg-transparent font-mono text-xs">
               <LayoutTemplate className="h-3.5 w-3.5 mr-1.5" />TEMPLATES
@@ -497,6 +559,65 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Snapshots Panel */}
+      {showSnapshots && (
+        <div className="border-b border-purple-700/40 bg-[#0c090c] p-4">
+          <div className="max-w-7xl mx-auto">
+            <h3 className="text-xs text-purple-400 mb-2 glow-purple font-mono tracking-wider">{'>'} LOCAL SAFE SNAPSHOTS (STORED ON DEVICE):</h3>
+            
+            <div className="flex gap-2 mb-4 max-w-md">
+              <Input
+                value={snapshotName}
+                onChange={(e) => setSnapshotName(e.target.value)}
+                placeholder="Snapshot label..."
+                className="h-7 text-xs font-mono bg-black/60 border-purple-800/50 text-purple-300 placeholder:text-purple-900 focus:border-purple-500/70 focus:outline-none"
+              />
+              <Button
+                size="sm"
+                onClick={() => { createSnapshot(snapshotName); setSnapshotName('') }}
+                className="bg-purple-900/50 border border-purple-600/40 text-purple-300 hover:bg-purple-800/60 font-mono text-xs h-7 shrink-0"
+              >
+                CREATE SNAPSHOT
+              </Button>
+            </div>
+
+            {snapshots.length === 0 ? (
+              <p className="text-[0.65rem] font-mono text-purple-700">No snapshots created yet. Snapshots let you save current workspace locally before script executions.</p>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {snapshots.map((s) => (
+                  <div key={s.id} className="border border-purple-900/40 bg-black/40 p-2 flex items-center justify-between gap-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-mono text-purple-300 truncate font-bold">{s.name}</span>
+                      <span className="text-[0.55rem] font-mono text-purple-700">
+                        {s.rootName}/ • {new Date(s.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => restoreSnapshot(s.id)}
+                        className="bg-purple-950/40 border border-purple-800/50 text-purple-400 hover:bg-purple-900/50 font-mono text-[0.6rem] h-6 px-2"
+                      >
+                        REVERT
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteSnapshot(s.id)}
+                        className="text-red-500 hover:text-red-400 hover:bg-red-900/10 font-mono text-[0.6rem] h-6 px-1"
+                      >
+                        DELETE
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Templates Panel */}
       {showTemplates && (
