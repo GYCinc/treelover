@@ -511,7 +511,7 @@ export default function Home() {
               <Terminal className="h-5 w-5 text-amber-400 glow-amber-pulse" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-widest uppercase text-amber-400 glow-amber">TREE ARCHITECT</h1>
+              <h1 className="text-lg font-bold tracking-widest uppercase text-amber-400 glow-amber">tree_Lover</h1>
               <p className="text-[0.65rem] text-green-600 tracking-wider uppercase">
                 Visual folder structure builder &gt; export for agents
               </p>

@@ -277,7 +277,7 @@ func (m *model) handleNormalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.refreshFlat()
 			return *m, nil
 		}
-		m.showConfirm("Quit Tree Architect?", func() {
+		m.showConfirm("Quit tree_Lover?", func() {
 			m.quitting = true
 		})
 		return *m, nil

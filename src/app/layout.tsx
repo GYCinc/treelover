@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tree Architect — Visual Folder Structure Builder",
+  title: "tree_Lover — Visual Folder Structure Builder",
   description: "Build folder structures visually and export as tree text for AI agents. No files created — just clean tree output.",
   keywords: ["tree", "folder structure", "directory tree", "AI agent", "project scaffolding"],
   icons: {
