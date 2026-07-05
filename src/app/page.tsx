@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { z } from 'zod'
 import {
   useTreeStore,
@@ -319,7 +319,7 @@ export default function Home() {
     }
   }, [exportFormat, rootName, nodes])
 
-  const outputText = getOutputText()
+  const outputText = useMemo(() => getOutputText(), [getOutputText])
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const node = event.active.data.current?.node as TreeNode | undefined
