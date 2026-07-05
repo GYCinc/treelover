@@ -207,9 +207,9 @@ function DraggableTreeNodeRow({ node, depth }: { node: TreeNode; depth: number }
 function DragOverlayContent({ node }: { node: TreeNode | null }) {
   if (!node) return null
   return (
-    <div className="flex items-center gap-2 py-1.5 px-3 bg-[#1a2a1a] border border-amber-500/50 rounded shadow-[0_0_16px_rgba(255,179,71,0.3)]">
-      {node.type === 'folder' ? <Folder className="h-4 w-4 text-amber-400" /> : <File className="h-4 w-4 text-green-400" />}
-      <span className="text-sm font-mono text-amber-300 glow-amber">{node.name}{node.type === 'folder' && '/'}</span>
+    <div className="flex items-center gap-2 py-1.5 px-3 bg-secondary border border-primary rounded shadow-[0_0_16px_var(--border)] opacity-90">
+      {node.type === 'folder' ? <Folder className="h-4 w-4 text-primary" /> : <File className="h-4 w-4 text-foreground/80" />}
+      <span className="text-sm font-mono text-primary glow-active">{node.name}{node.type === 'folder' && '/'}</span>
     </div>
   )
 }
@@ -693,7 +693,7 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Tree Builder */}
-          <div className="terminal-border crt-screen bg-card flex flex-col" suppressHydrationWarning>
+          <div className="terminal-border crt-screen bg-card flex flex-col" data-dragging={activeDragNode !== null} suppressHydrationWarning>
             {/* Toolbar */}
             <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-background/50">
               <div className="flex items-center gap-2">
