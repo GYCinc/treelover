@@ -63,6 +63,7 @@ import {
   Calendar,
   Sparkles,
   Loader2,
+  HelpCircle,
   FolderOpen,
 } from 'lucide-react'
 
@@ -456,6 +457,7 @@ export default function Home() {
 
   const [snapshotName, setSnapshotName] = useState('')
   const [showSnapshots, setShowSnapshots] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
 
   // Hydrate snapshots, theme, and skin client-side to prevent SSR mismatch
   useEffect(() => {
@@ -568,6 +570,10 @@ export default function Home() {
               className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
               <FolderOpen className="h-3.5 w-3.5 mr-1.5" />SELECT FOLDER
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowHelp(!showHelp)}
+              className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
+              <HelpCircle className="h-3.5 w-3.5 mr-1.5" />HELP
+            </Button>
             <Button variant="outline" size="sm" onClick={clearAll}
               className="border-border text-destructive hover:bg-secondary bg-transparent font-mono text-xs">
               <Eraser className="h-3.5 w-3.5 mr-1.5" />CLEAR
@@ -575,6 +581,29 @@ export default function Home() {
           </div>
         </div>
       </header>
+
+      {/* Help Panel */}
+      {showHelp && (
+        <div className="border-b border-border bg-card p-4">
+          <div className="max-w-7xl mx-auto">
+            <h3 className="text-xs font-bold tracking-widest uppercase text-primary glow-active mb-3 font-mono">{'>'} QUICK START & CONTROLS:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-mono text-muted-foreground leading-relaxed">
+              <div className="border border-border p-3 bg-background/50 rounded">
+                <span className="text-primary font-bold">01</span> Drag nodes onto folders to re-nest.
+                <p className="mt-1 text-[0.65rem] text-muted-foreground/80">Use the grab icon <GripVertical className="h-3 w-3 inline" /> on the left of each row to move nodes.</p>
+              </div>
+              <div className="border border-border p-3 bg-background/50 rounded">
+                <span className="text-primary font-bold">02</span> Duplicate <CopyPlus className="h-3 w-3 inline text-foreground/80" /> clones folder structures.
+                <p className="mt-1 text-[0.65rem] text-muted-foreground/80">Creates a duplicate copy of selected nodes including nested children.</p>
+              </div>
+              <div className="border border-border p-3 bg-background/50 rounded">
+                <span className="text-primary font-bold">03</span> Keyboard Shortcuts:
+                <p className="mt-1 text-[0.65rem] text-muted-foreground/80">Undo actions with <kbd className="bg-secondary px-1 border border-border">Ctrl+Z</kbd> and Redo with <kbd className="bg-secondary px-1 border border-border">Ctrl+Y</kbd>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Snapshots Panel */}
       {showSnapshots && (
@@ -870,19 +899,6 @@ export default function Home() {
                       className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
                       <Terminal className="h-3.5 w-3.5 mr-1.5" />SCRIPT
                     </Button>
-                  </div>
-
-                  {/* Tips */}
-                  <div className="mt-4 border border-border bg-background/50 p-3">
-                    <h3 className="text-xs font-bold tracking-widest uppercase text-primary glow-active mb-2">{'>'} CONTROLS</h3>
-                    <ul className="text-[0.6rem] text-muted-foreground space-y-1 font-mono">
-                      <li><span className="text-primary font-bold">01</span> Drag nodes onto folders to re-nest</li>
-                      <li><span className="text-primary font-bold">02</span> <GripVertical className="h-2.5 w-2.5 inline" /> grip handle to start dragging</li>
-                      <li><span className="text-primary font-bold">03</span> <CopyPlus className="h-2.5 w-2.5 inline" /> duplicate clones a node + children</li>
-                      <li><span className="text-primary font-bold">04</span> <Undo2 className="h-2.5 w-2.5 inline" /> Ctrl+Z / Ctrl+Y for undo/redo</li>
-                      <li><span className="text-primary font-bold">05</span> Switch output: Tree / mkdir / JSON</li>
-                      <li><span className="text-primary font-bold">06</span> Templates give you a head start</li>
-                    </ul>
                   </div>
                 </>
               )}
