@@ -561,6 +561,7 @@ export type LocalSnapshot = z.infer<typeof ZSnapshotSchema>
 
 // ─── Theme types ──────────────────────────────────────────────────────
 export type ThemeName = 'green' | 'amber' | 'blue' | 'classic' | 'cyber-glass' | 'nord-light' | 'nord-dark' | 'dracula' | 'solarized-light'
+export type SkinName = 'terminal' | 'modern' | 'glass'
 
 // ─── Store ────────────────────────────────────────────────────────────
 
@@ -575,6 +576,10 @@ interface TreeState {
   // Theme state
   theme: ThemeName
   setTheme: (theme: ThemeName) => void
+
+  // Skin state
+  skin: SkinName
+  setSkin: (skin: SkinName) => void
 
   // Snapshot actions and state
   snapshots: LocalSnapshot[]
@@ -694,6 +699,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   movingId: null,
   originalSnapshot: null,
   theme: (typeof window !== 'undefined' ? (localStorage.getItem('tree-theme') as ThemeName) : 'green') || 'green',
+  skin: (typeof window !== 'undefined' ? (localStorage.getItem('tree-skin') as SkinName) : 'terminal') || 'terminal',
   snapshots: [], // Will load on mount to handle hydration
   history: [],
   historyIndex: -1,
@@ -703,6 +709,14 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     if (typeof window !== 'undefined') {
       localStorage.setItem('tree-theme', theme)
       document.documentElement.setAttribute('data-theme', theme)
+    }
+  },
+
+  setSkin: (skin) => {
+    set({ skin })
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tree-skin', skin)
+      document.documentElement.setAttribute('data-skin', skin)
     }
   },
 

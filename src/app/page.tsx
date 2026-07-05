@@ -451,27 +451,25 @@ export default function Home() {
   }, [rootName, nodes, originalSnapshot])
 
   const {
-    theme, setTheme, snapshots, createSnapshot, restoreSnapshot, deleteSnapshot
+    theme, setTheme, skin, setSkin, snapshots, createSnapshot, restoreSnapshot, deleteSnapshot
   } = useTreeStore()
 
   const [snapshotName, setSnapshotName] = useState('')
   const [showSnapshots, setShowSnapshots] = useState(false)
 
-  // Hydrate snapshots and theme client-side to prevent SSR mismatch
+  // Hydrate snapshots, theme, and skin client-side to prevent SSR mismatch
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedTheme = localStorage.getItem('tree-theme') as ThemeName | null
-      if (storedTheme) {
-        setTheme(storedTheme)
-      } else {
-        setTheme('green')
-      }
+      setTheme(storedTheme || 'green')
+      
+      const storedSkin = localStorage.getItem('tree-skin') as SkinName | null
+      setSkin(storedSkin || 'terminal')
       
       const storedSnaps = localStorage.getItem('tree-snapshots')
       if (storedSnaps) {
         try {
           const parsed = JSON.parse(storedSnaps)
-          // Validate using Zod schema for safety
           const validated = z.array(ZSnapshotSchema).parse(parsed)
           useTreeStore.setState({ snapshots: validated })
         } catch (e) {
@@ -479,7 +477,7 @@ export default function Home() {
         }
       }
     }
-  }, [setTheme])
+  }, [setTheme, setSkin])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -491,11 +489,11 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [undo, redo, canUndo, canRedo])
 
-  const isCrtTheme = theme === 'green' || theme === 'amber' || theme === 'blue' || theme === 'classic'
+  const isCrtActive = skin === 'terminal'
 
   return (
-    <div className={`min-h-screen bg-background text-foreground ${isCrtTheme ? 'crt-flicker patina-grid' : ''}`} data-theme={theme}>
-      {isCrtTheme && (
+    <div className={`min-h-screen bg-background text-foreground ${isCrtActive ? 'crt-flicker patina-grid' : ''}`} data-theme={theme} data-skin={skin}>
+      {isCrtActive && (
         <>
           <div className="crt-scanlines" />
           <div className="crt-scanline-bar" />
@@ -518,6 +516,24 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center flex-wrap gap-1.5">
+            {/* Skin selector */}
+            <div className="flex items-center gap-1 border border-border px-2 py-0.5 rounded mr-1">
+              <span className="text-[0.65rem] text-muted-foreground font-mono tracking-wider mr-1">SKIN:</span>
+              {(['terminal', 'modern', 'glass'] as SkinName[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSkin(s)}
+                  className={`text-[0.6rem] px-1.5 py-0.5 font-mono uppercase rounded transition-colors ${
+                    skin === s
+                      ? 'bg-secondary text-foreground border border-border font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
             {/* Theme selector */}
             <div className="flex items-center gap-1 border border-border px-2 py-0.5 rounded mr-1 flex-wrap">
               <span className="text-[0.65rem] text-muted-foreground font-mono tracking-wider mr-1">THEME:</span>
