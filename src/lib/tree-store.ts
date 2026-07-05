@@ -698,8 +698,8 @@ export const useTreeStore = create<TreeState>((set, get) => ({
   editingId: null,
   movingId: null,
   originalSnapshot: null,
-  theme: (typeof window !== 'undefined' ? (localStorage.getItem('tree-theme') as ThemeName) : 'green') || 'green',
-  skin: (typeof window !== 'undefined' ? (localStorage.getItem('tree-skin') as SkinName) : 'terminal') || 'terminal',
+  theme: 'green',
+  skin: 'terminal',
   snapshots: [], // Will load on mount to handle hydration
   history: [],
   historyIndex: -1,

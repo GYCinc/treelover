@@ -494,7 +494,7 @@ export default function Home() {
   const isCrtActive = skin === 'terminal'
 
   return (
-    <div className={`min-h-screen bg-background text-foreground ${isCrtActive ? 'crt-flicker patina-grid' : ''}`} data-theme={theme} data-skin={skin}>
+    <div className={`min-h-screen bg-background text-foreground ${isCrtActive ? 'crt-flicker patina-grid' : ''}`} data-theme={theme} data-skin={skin} suppressHydrationWarning>
       {isCrtActive && (
         <>
           <div className="crt-scanlines" />
@@ -517,7 +517,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="flex items-center flex-wrap gap-1.5">
+          <div className="flex items-center flex-wrap gap-1.5" suppressHydrationWarning>
             {/* Skin selector */}
             <div className="flex items-center gap-1 border border-border px-2 py-0.5 rounded mr-1">
               <span className="text-[0.65rem] text-muted-foreground font-mono tracking-wider mr-1">SKIN:</span>
