@@ -560,7 +560,7 @@ export const ZSnapshotSchema = z.object({
 export type LocalSnapshot = z.infer<typeof ZSnapshotSchema>
 
 // ─── Theme types ──────────────────────────────────────────────────────
-export type ThemeName = 'green' | 'amber' | 'blue' | 'classic' | 'cyber-glass' | 'nord-light' | 'nord-dark'
+export type ThemeName = 'green' | 'amber' | 'blue' | 'classic' | 'cyber-glass' | 'nord-light' | 'nord-dark' | 'dracula' | 'solarized-light'
 
 // ─── Store ────────────────────────────────────────────────────────────
 

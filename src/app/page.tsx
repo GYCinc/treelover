@@ -521,7 +521,7 @@ export default function Home() {
             {/* Theme selector */}
             <div className="flex items-center gap-1 border border-green-900/40 px-2 py-0.5 rounded mr-1 flex-wrap">
               <span className="text-[0.65rem] text-green-700 font-mono tracking-wider mr-1">THEME:</span>
-              {(['green', 'amber', 'blue', 'classic', 'cyber-glass', 'nord-dark', 'nord-light'] as ThemeName[]).map((t) => (
+              {(['green', 'amber', 'blue', 'classic', 'cyber-glass', 'nord-dark', 'nord-light', 'dracula', 'solarized-light'] as ThemeName[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTheme(t)}
