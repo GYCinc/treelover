@@ -561,7 +561,7 @@ export type LocalSnapshot = z.infer<typeof ZSnapshotSchema>
 
 // ─── Theme types ──────────────────────────────────────────────────────
 export type ThemeName = 'green' | 'amber' | 'blue' | 'classic' | 'cyber-glass' | 'nord-light' | 'nord-dark' | 'dracula' | 'solarized-light'
-export type SkinName = 'terminal' | 'modern' | 'glass'
+export type SkinName = 'terminal' | 'modern' | 'chalkboard'
 
 // ─── Store ────────────────────────────────────────────────────────────
 

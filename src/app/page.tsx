@@ -519,7 +519,7 @@ export default function Home() {
             {/* Skin selector */}
             <div className="flex items-center gap-1 border border-border px-2 py-0.5 rounded mr-1">
               <span className="text-[0.65rem] text-muted-foreground font-mono tracking-wider mr-1">SKIN:</span>
-              {(['terminal', 'modern', 'glass'] as SkinName[]).map((s) => (
+              {(['terminal', 'modern', 'chalkboard'] as SkinName[]).map((s) => (
                 <button
                   key={s}
                   onClick={() => setSkin(s)}

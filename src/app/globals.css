@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -462,28 +463,36 @@
   animation: none !important;
 }
 
-/* 3. Glassmorphic Neo-neon Skin */
-[data-skin="glass"] {
-  --radius: 0.5rem;
-  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+/* 3. Chalkboard Sketch Skin */
+[data-skin="chalkboard"] {
+  --radius: 0.35rem;
+  --font-family: 'Architects Daughter', cursive;
   --font-weight: 500;
+  --background: #18281d !important;
+  --foreground: #eef3ef !important;
+  --card: #1c2e22 !important;
+  --popover: #1c2e22 !important;
+  --secondary: #263b2d !important;
+  --border: rgba(230, 240, 230, 0.45) !important;
+  --muted: #132017 !important;
+  --muted-foreground: #a4baa9 !important;
 }
-[data-skin="glass"] .terminal-border,
-[data-skin="glass"] .terminal-border-amber {
-  background: rgba(15, 23, 42, 0.4) !important;
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+[data-skin="chalkboard"] .terminal-border,
+[data-skin="chalkboard"] .terminal-border-amber {
+  background: #1c2e22 !important;
+  border: 2px dashed rgba(230, 240, 230, 0.5) !important;
+  box-shadow: 0 0 10px rgba(230, 240, 230, 0.1), inset 0 0 15px rgba(0, 0, 0, 0.2);
 }
-[data-skin="glass"] .crt-screen {
-  border-radius: 8px;
+[data-skin="chalkboard"] .crt-screen {
+  border-radius: 6px;
   box-shadow: none;
 }
-[data-skin="glass"] .glow-active {
-  text-shadow: 0 0 4px var(--glow-color-tertiary);
+[data-skin="chalkboard"] .glow-active {
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.85), 0 0 5px rgba(255, 255, 255, 0.45);
 }
-[data-skin="glass"] .glow-active-pulse {
-  animation: text-glow-pulse 3s ease-in-out infinite;
+[data-skin="chalkboard"] .glow-active-pulse {
+  text-shadow: 0 0 2px rgba(255, 255, 255, 0.85), 0 0 5px rgba(255, 255, 255, 0.45);
+  animation: none !important;
 }
 
 /* Selection color */
