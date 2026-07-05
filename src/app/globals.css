@@ -423,6 +423,7 @@
 [data-skin="terminal"] {
   --radius: 0.125rem;
   --font-family: 'Courier New', Courier, monospace;
+  --font-weight: 400;
 }
 [data-skin="terminal"] .terminal-border,
 [data-skin="terminal"] .terminal-border-amber {
@@ -444,6 +445,7 @@
 [data-skin="modern"] {
   --radius: 0.75rem;
   --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-weight: 500;
 }
 [data-skin="modern"] .terminal-border,
 [data-skin="modern"] .terminal-border-amber {
@@ -464,6 +466,7 @@
 [data-skin="glass"] {
   --radius: 0.5rem;
   --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-weight: 500;
 }
 [data-skin="glass"] .terminal-border,
 [data-skin="glass"] .terminal-border-amber {
@@ -497,5 +500,6 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-family);
+    font-weight: var(--font-weight, 400);
   }
 }
