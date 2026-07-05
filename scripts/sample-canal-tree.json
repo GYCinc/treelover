@@ -1,0 +1,37 @@
+{
+  "rootName": "uk_canal_network",
+  "nodes": [
+    {
+      "id": "node-1",
+      "name": "Lock_One",
+      "type": "folder",
+      "children": [
+        {
+          "id": "node-2",
+          "name": "siphon_valve_A",
+          "type": "file",
+          "children": []
+        },
+        {
+          "id": "node-3",
+          "name": "Lock_Two_Lower",
+          "type": "folder",
+          "children": [
+            {
+              "id": "node-4",
+              "name": "drain_nozzle_B",
+              "type": "file",
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "node-5",
+      "name": "outflow_pipe",
+      "type": "file",
+      "children": []
+    }
+  ]
+}
