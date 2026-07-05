@@ -122,49 +122,49 @@ function DraggableTreeNodeRow({ node, depth }: { node: TreeNode; depth: number }
       <div
         ref={combinedRef}
         className={`group flex items-center gap-1 py-1 px-2 cursor-pointer transition-all ${
-          isDragging ? 'opacity-40 ring-2 ring-amber-400/30'
-          : isBeingMoved ? 'bg-amber-900/30 ring-2 ring-amber-400/60 shadow-[0_0_8px_rgba(255,179,71,0.2)]'
-          : isDropHovered ? 'bg-amber-900/30 ring-2 ring-amber-400/70 shadow-[0_0_12px_rgba(255,179,71,0.3)]'
-          : isClickDropTarget ? 'bg-amber-900/10 ring-1 ring-amber-600/30 hover:bg-amber-900/25'
-          : isSelected ? 'bg-green-900/30 ring-1 ring-green-500/40'
-          : 'hover:bg-green-900/15'
+          isDragging ? 'opacity-40 ring-2 ring-primary/30'
+          : isBeingMoved ? 'bg-primary/20 ring-2 ring-primary/60 shadow-[0_0_8px_var(--border)]'
+          : isDropHovered ? 'bg-accent/20 ring-2 ring-accent/70 shadow-[0_0_12px_var(--border)]'
+          : isClickDropTarget ? 'bg-primary/5 ring-1 ring-primary/30 hover:bg-primary/10'
+          : isSelected ? 'bg-secondary text-foreground ring-1 ring-border'
+          : 'hover:bg-secondary/40'
         }`}
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
       >
-        <span {...attributes} {...listeners} className="shrink-0 cursor-grab active:cursor-grabbing text-green-700 hover:text-green-400 opacity-0 group-hover:opacity-100 transition-opacity">
+        <span {...attributes} {...listeners} className="shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
           <GripVertical className="h-3.5 w-3.5" />
         </span>
 
         {node.type === 'folder' ? (
           <button onClick={(e) => { e.stopPropagation(); toggleExpand(node.id) }}
-            className={`shrink-0 p-0.5 rounded hover:bg-green-900/30 ${isDropHovered || isClickDropTarget ? 'text-amber-400' : 'text-green-400'}`}>
+            className={`shrink-0 p-0.5 rounded hover:bg-secondary/60 ${isDropHovered || isClickDropTarget ? 'text-accent' : 'text-primary'}`}>
             {node.isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           </button>
         ) : <span className="w-5 shrink-0" />}
 
         {node.type === 'folder' ? (
-          <Folder className={`h-4 w-4 shrink-0 ${isDropHovered ? 'text-amber-200' : 'text-amber-400'}`} />
+          <Folder className={`h-4 w-4 shrink-0 ${isDropHovered ? 'text-accent' : 'text-primary'}`} />
         ) : (
-          <File className="h-4 w-4 text-green-500/60 shrink-0" />
+          <File className="h-4 w-4 text-foreground/60 shrink-0" />
         )}
 
         {isEditing ? (
           <Input ref={inputRef} defaultValue={node.name}
-            className="h-6 text-sm py-0 px-1 flex-1 min-w-0 bg-black/60 border-green-600/50 text-green-300 focus:border-amber-500"
+            className="h-6 text-sm py-0 px-1 flex-1 min-w-0 bg-background border-border text-foreground focus:border-primary"
             onBlur={handleRenameSubmit} onKeyDown={handleKeyDown} onClick={(e) => e.stopPropagation()} />
         ) : (
-          <span className="text-sm truncate flex-1 min-w-0 select-none glow-green">
-            {node.name}{node.type === 'folder' && <span className="text-green-600">/</span>}
+          <span className="text-sm truncate flex-1 min-w-0 select-none glow-active">
+            {node.name}{node.type === 'folder' && <span className="text-muted-foreground">/</span>}
           </span>
         )}
 
         {isDropHovered && !isEditing && (
-          <span className="text-amber-200 text-[0.6rem] tracking-wider uppercase glow-amber animate-pulse shrink-0 font-bold">DROP IN</span>
+          <span className="text-accent text-[0.6rem] tracking-wider uppercase glow-active animate-pulse shrink-0 font-bold">DROP IN</span>
         )}
         {isBeingMoved && !isEditing && !isDragging && (
-          <span className="text-amber-400 text-[0.6rem] tracking-wider uppercase glow-amber animate-pulse shrink-0">MOVING</span>
+          <span className="text-primary text-[0.6rem] tracking-wider uppercase glow-active animate-pulse shrink-0">MOVING</span>
         )}
 
         <div className={`flex items-center gap-0.5 shrink-0 transition-opacity ${isSelected || isBeingMoved ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
@@ -172,19 +172,19 @@ function DraggableTreeNodeRow({ node, depth }: { node: TreeNode; depth: number }
             <>
               {node.type === 'folder' && (
                 <>
-                  <button onClick={(e) => { e.stopPropagation(); addNode(node.id, 'folder') }} className="p-1 rounded hover:bg-green-900/40 text-amber-400" title="Add subfolder"><FolderPlus className="h-3.5 w-3.5" /></button>
-                  <button onClick={(e) => { e.stopPropagation(); addNode(node.id, 'file') }} className="p-1 rounded hover:bg-green-900/40 text-green-400" title="Add file"><FilePlus className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); addNode(node.id, 'folder') }} className="p-1 rounded hover:bg-secondary text-accent" title="Add subfolder"><FolderPlus className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); addNode(node.id, 'file') }} className="p-1 rounded hover:bg-secondary text-foreground" title="Add file"><FilePlus className="h-3.5 w-3.5" /></button>
                 </>
               )}
-              <button onClick={(e) => { e.stopPropagation(); setMovingId(node.id) }} className="p-1 rounded hover:bg-amber-900/40 text-amber-300" title="Move"><Move className="h-3.5 w-3.5" /></button>
-              <button onClick={(e) => { e.stopPropagation(); duplicateNode(node.id) }} className="p-1 rounded hover:bg-green-900/40 text-green-300" title="Duplicate"><CopyPlus className="h-3.5 w-3.5" /></button>
-              <button onClick={(e) => { e.stopPropagation(); setEditingId(node.id) }} className="p-1 rounded hover:bg-green-900/40 text-green-300" title="Rename"><Pencil className="h-3.5 w-3.5" /></button>
-              <button onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'up') }} className="p-1 rounded hover:bg-green-900/40 text-green-500" title="Move up"><ArrowUp className="h-3 w-3" /></button>
-              <button onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'down') }} className="p-1 rounded hover:bg-green-900/40 text-green-500" title="Move down"><ArrowDown className="h-3 w-3" /></button>
+              <button onClick={(e) => { e.stopPropagation(); setMovingId(node.id) }} className="p-1 rounded hover:bg-secondary text-primary" title="Move"><Move className="h-3.5 w-3.5" /></button>
+              <button onClick={(e) => { e.stopPropagation(); duplicateNode(node.id) }} className="p-1 rounded hover:bg-secondary text-foreground" title="Duplicate"><CopyPlus className="h-3.5 w-3.5" /></button>
+              <button onClick={(e) => { e.stopPropagation(); setEditingId(node.id) }} className="p-1 rounded hover:bg-secondary text-foreground" title="Rename"><Pencil className="h-3.5 w-3.5" /></button>
+              <button onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'up') }} className="p-1 rounded hover:bg-secondary text-muted-foreground" title="Move up"><ArrowUp className="h-3 w-3" /></button>
+              <button onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'down') }} className="p-1 rounded hover:bg-secondary text-muted-foreground" title="Move down"><ArrowDown className="h-3 w-3" /></button>
             </>
           )}
           <button onClick={(e) => { e.stopPropagation(); if (isBeingMoved) cancelMove(); else deleteNode(node.id) }}
-            className={`p-1 rounded ${isBeingMoved ? 'hover:bg-amber-900/40 text-amber-400' : 'hover:bg-red-900/40 text-red-400'}`}
+            className={`p-1 rounded hover:bg-secondary ${isBeingMoved ? 'text-primary' : 'text-destructive'}`}
             title={isBeingMoved ? 'Cancel move' : 'Delete'}>
             {isBeingMoved ? <X className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
           </button>
@@ -494,7 +494,7 @@ export default function Home() {
   const isCrtTheme = theme === 'green' || theme === 'amber' || theme === 'blue' || theme === 'classic'
 
   return (
-    <div className={`min-h-screen bg-[#0c0f0c] ${isCrtTheme ? 'crt-flicker patina-grid' : ''}`} data-theme={theme}>
+    <div className={`min-h-screen bg-background text-foreground ${isCrtTheme ? 'crt-flicker patina-grid' : ''}`} data-theme={theme}>
       {isCrtTheme && (
         <>
           <div className="crt-scanlines" />
@@ -504,31 +504,31 @@ export default function Home() {
       )}
 
       {/* Header */}
-      <header className="border-b border-green-800/60 bg-[#0a0d0a]">
+      <header className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 border border-amber-700/50 rounded bg-amber-900/20">
-              <Terminal className="h-5 w-5 text-amber-400 glow-amber-pulse" />
+            <div className="p-2 border border-border rounded bg-secondary">
+              <Terminal className="h-5 w-5 text-primary glow-active-pulse" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-widest uppercase text-amber-400 glow-amber">tree_Lover</h1>
-              <p className="text-[0.65rem] text-green-600 tracking-wider uppercase">
+              <h1 className="text-lg font-bold tracking-widest uppercase text-primary glow-active">tree_Lover</h1>
+              <p className="text-[0.65rem] text-muted-foreground tracking-wider uppercase">
                 Visual folder structure builder &gt; export for agents
               </p>
             </div>
           </div>
           <div className="flex items-center flex-wrap gap-1.5">
             {/* Theme selector */}
-            <div className="flex items-center gap-1 border border-green-900/40 px-2 py-0.5 rounded mr-1 flex-wrap">
-              <span className="text-[0.65rem] text-green-700 font-mono tracking-wider mr-1">THEME:</span>
+            <div className="flex items-center gap-1 border border-border px-2 py-0.5 rounded mr-1 flex-wrap">
+              <span className="text-[0.65rem] text-muted-foreground font-mono tracking-wider mr-1">THEME:</span>
               {(['green', 'amber', 'blue', 'classic', 'cyber-glass', 'nord-dark', 'nord-light', 'dracula', 'solarized-light'] as ThemeName[]).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTheme(t)}
                   className={`text-[0.6rem] px-1.5 py-0.5 font-mono uppercase rounded transition-colors ${
                     theme === t
-                      ? 'bg-green-900/30 text-green-400 border border-green-500/40 glow-green font-bold'
-                      : 'text-green-700 hover:text-green-500'
+                      ? 'bg-secondary text-foreground border border-border glow-active font-bold'
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {t}
@@ -537,23 +537,23 @@ export default function Home() {
             </div>
             
             <Button variant="outline" size="sm" onClick={() => setShowSnapshots(!showSnapshots)}
-              className="border-purple-700/50 text-purple-400 hover:bg-purple-900/30 bg-transparent font-mono text-xs">
+              className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
               <Layers className="h-3.5 w-3.5 mr-1.5" />SNAPSHOTS ({snapshots.length})
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowTemplates(!showTemplates)}
-              className="border-amber-700/50 text-amber-400 hover:bg-amber-900/30 bg-transparent font-mono text-xs">
+              className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
               <LayoutTemplate className="h-3.5 w-3.5 mr-1.5" />TEMPLATES
             </Button>
             <Button variant="outline" size="sm" onClick={() => setShowImport(!showImport)}
-              className="border-green-700/50 text-green-400 hover:bg-green-900/30 bg-transparent font-mono text-xs">
+              className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
               <Upload className="h-3.5 w-3.5 mr-1.5" />IMPORT
             </Button>
             <Button variant="outline" size="sm" onClick={handleSelectFolder}
-              className="border-green-700/50 text-green-400 hover:bg-green-900/30 bg-transparent font-mono text-xs">
+              className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
               <FolderOpen className="h-3.5 w-3.5 mr-1.5" />SELECT FOLDER
             </Button>
             <Button variant="outline" size="sm" onClick={clearAll}
-              className="border-red-800/50 text-red-400 hover:bg-red-900/30 bg-transparent font-mono text-xs">
+              className="border-border text-destructive hover:bg-secondary bg-transparent font-mono text-xs">
               <Eraser className="h-3.5 w-3.5 mr-1.5" />CLEAR
             </Button>
           </div>
@@ -562,35 +562,35 @@ export default function Home() {
 
       {/* Snapshots Panel */}
       {showSnapshots && (
-        <div className="border-b border-purple-700/40 bg-[#0c090c] p-4">
+        <div className="border-b border-border bg-card p-4">
           <div className="max-w-7xl mx-auto">
-            <h3 className="text-xs text-purple-400 mb-2 glow-purple font-mono tracking-wider">{'>'} LOCAL SAFE SNAPSHOTS (STORED ON DEVICE):</h3>
+            <h3 className="text-xs text-primary mb-2 glow-active font-mono tracking-wider">{'>'} LOCAL SAFE SNAPSHOTS (STORED ON DEVICE):</h3>
             
             <div className="flex gap-2 mb-4 max-w-md">
               <Input
                 value={snapshotName}
                 onChange={(e) => setSnapshotName(e.target.value)}
                 placeholder="Snapshot label..."
-                className="h-7 text-xs font-mono bg-black/60 border-purple-800/50 text-purple-300 placeholder:text-purple-900 focus:border-purple-500/70 focus:outline-none"
+                className="h-7 text-xs font-mono bg-background border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               />
               <Button
                 size="sm"
                 onClick={() => { createSnapshot(snapshotName); setSnapshotName('') }}
-                className="bg-purple-900/50 border border-purple-600/40 text-purple-300 hover:bg-purple-800/60 font-mono text-xs h-7 shrink-0"
+                className="bg-secondary border border-border text-foreground hover:bg-muted font-mono text-xs h-7 shrink-0"
               >
                 CREATE SNAPSHOT
               </Button>
             </div>
 
             {snapshots.length === 0 ? (
-              <p className="text-[0.65rem] font-mono text-purple-700">No snapshots created yet. Snapshots let you save current workspace locally before script executions.</p>
+              <p className="text-[0.65rem] font-mono text-muted-foreground">No snapshots created yet. Snapshots let you save current workspace locally before script executions.</p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                 {snapshots.map((s) => (
-                  <div key={s.id} className="border border-purple-900/40 bg-black/40 p-2 flex items-center justify-between gap-3">
+                  <div key={s.id} className="border border-border bg-background/40 p-2 flex items-center justify-between gap-3">
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs font-mono text-purple-300 truncate font-bold">{s.name}</span>
-                      <span className="text-[0.55rem] font-mono text-purple-700">
+                      <span className="text-xs font-mono text-foreground truncate font-bold">{s.name}</span>
+                      <span className="text-[0.55rem] font-mono text-muted-foreground">
                         {s.rootName}/ • {new Date(s.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
@@ -598,7 +598,7 @@ export default function Home() {
                       <Button
                         size="sm"
                         onClick={() => restoreSnapshot(s.id)}
-                        className="bg-purple-950/40 border border-purple-800/50 text-purple-400 hover:bg-purple-900/50 font-mono text-[0.6rem] h-6 px-2"
+                        className="bg-secondary border border-border text-foreground hover:bg-muted font-mono text-[0.6rem] h-6 px-2"
                       >
                         REVERT
                       </Button>
@@ -606,7 +606,7 @@ export default function Home() {
                         size="sm"
                         variant="ghost"
                         onClick={() => deleteSnapshot(s.id)}
-                        className="text-red-500 hover:text-red-400 hover:bg-red-900/10 font-mono text-[0.6rem] h-6 px-1"
+                        className="text-destructive hover:text-red-400 hover:bg-red-900/10 font-mono text-[0.6rem] h-6 px-1"
                       >
                         DELETE
                       </Button>
@@ -621,27 +621,19 @@ export default function Home() {
 
       {/* Templates Panel */}
       {showTemplates && (
-        <div className="border-b border-amber-700/40 bg-[#0a0d0a]">
+        <div className="border-b border-border bg-card">
           <div className="max-w-7xl mx-auto px-4 py-3">
-            <p className="text-xs text-amber-400 mb-2 glow-amber font-mono tracking-wider">{'>'} LOAD A PROJECT TEMPLATE:</p>
+            <p className="text-xs text-primary mb-2 glow-active font-mono tracking-wider">{'>'} LOAD A PROJECT TEMPLATE:</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
               {TEMPLATES.map((t) => (
                 <button key={t.id} onClick={() => { loadTemplate(t.id); setShowTemplates(false) }}
-                  className={`flex flex-col items-start p-2.5 rounded border transition-colors text-left ${
-                    t.id === 'llm-wiki' ? 'border-amber-700/40 bg-amber-900/10 hover:border-amber-500/60 hover:bg-amber-900/25'
-                    : t.id === 'weekly-calendar' ? 'border-blue-700/40 bg-blue-900/10 hover:border-blue-500/60 hover:bg-blue-900/25'
-                    : 'border-green-800/40 hover:border-amber-600/50 hover:bg-amber-900/15'
-                  }`}>
+                  className="flex flex-col items-start p-2.5 rounded border border-border bg-background/50 hover:bg-secondary transition-colors text-left">
                   <div className="flex items-center gap-1.5 mb-0.5">
-                    {t.id === 'llm-wiki' ? <BookOpen className="h-3 w-3 text-amber-400" /> : null}
-                    {t.id === 'weekly-calendar' ? <Calendar className="h-3 w-3 text-blue-400" /> : null}
-                    <span className={`text-xs font-mono ${
-                      t.id === 'llm-wiki' ? 'text-amber-200 glow-amber'
-                      : t.id === 'weekly-calendar' ? 'text-blue-200'
-                      : 'text-amber-300 glow-amber'
-                    }`}>{t.name}</span>
+                    {t.id === 'llm-wiki' ? <BookOpen className="h-3 w-3 text-primary" /> : null}
+                    {t.id === 'weekly-calendar' ? <Calendar className="h-3 w-3 text-accent" /> : null}
+                    <span className="text-xs font-mono text-primary glow-active">{t.name}</span>
                   </div>
-                  <span className="text-[0.55rem] font-mono text-green-700">{t.description}</span>
+                  <span className="text-[0.55rem] font-mono text-muted-foreground">{t.description}</span>
                 </button>
               ))}
             </div>
@@ -651,15 +643,15 @@ export default function Home() {
 
       {/* Move mode banner */}
       {movingId && (
-        <div className="border-b border-amber-600/50 bg-amber-900/20">
+        <div className="border-b border-primary/50 bg-secondary/20">
           <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Move className="h-4 w-4 text-amber-400 animate-pulse" />
-              <span className="text-xs font-mono text-amber-400 glow-amber tracking-wider">MOVE MODE — click folder or drag to drop</span>
+              <Move className="h-4 w-4 text-primary animate-pulse" />
+              <span className="text-xs font-mono text-primary glow-active tracking-wider">MOVE MODE — click folder or drag to drop</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={handleMoveToRoot} className="bg-amber-800/40 border border-amber-600/50 text-amber-300 hover:bg-amber-700/50 font-mono text-xs h-6">MOVE TO ROOT</Button>
-              <Button size="sm" variant="ghost" onClick={cancelMove} className="text-red-400 hover:text-red-300 hover:bg-red-900/20 font-mono text-xs h-6">[ESC]</Button>
+              <Button size="sm" onClick={handleMoveToRoot} className="bg-secondary border border-border text-foreground hover:bg-muted font-mono text-xs h-6">MOVE TO ROOT</Button>
+              <Button size="sm" variant="ghost" onClick={cancelMove} className="text-destructive hover:text-red-300 hover:bg-red-900/20 font-mono text-xs h-6">[ESC]</Button>
             </div>
           </div>
         </div>
@@ -667,15 +659,15 @@ export default function Home() {
 
       {/* Import Panel */}
       {showImport && (
-        <div className="border-b border-green-800/40 bg-[#0a0d0a]">
+        <div className="border-b border-border bg-card">
           <div className="max-w-7xl mx-auto px-4 py-4">
-            <p className="text-xs text-green-500 mb-2 glow-green font-mono">{'>'} PASTE EXISTING TREE STRUCTURE:</p>
+            <p className="text-xs text-primary mb-2 glow-active font-mono">{'>'} PASTE EXISTING TREE STRUCTURE:</p>
             <textarea value={importText} onChange={(e) => setImportText(e.target.value)}
-              className="w-full h-32 border border-green-800/50 bg-black/60 p-3 text-sm font-mono resize-y text-green-400 glow-green placeholder:text-green-800 focus:border-amber-600/50 focus:outline-none"
+              className="w-full h-32 border border-border bg-background p-3 text-sm font-mono resize-y text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
               placeholder={`my-project/\n├── src/\n│   ├── components/\n│   └── pages/\n└── package.json`} />
             <div className="flex gap-2 mt-2">
-              <Button size="sm" onClick={handleImport} className="bg-amber-700/40 border border-amber-600/50 text-amber-300 hover:bg-amber-700/60 font-mono text-xs">{'>'} IMPORT</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setShowImport(false); setImportText('') }} className="text-green-600 hover:text-green-400 hover:bg-green-900/20 font-mono text-xs">[CANCEL]</Button>
+              <Button size="sm" onClick={handleImport} className="bg-secondary border border-border text-foreground hover:bg-muted font-mono text-xs">{'>'} IMPORT</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setShowImport(false); setImportText('') }} className="text-muted-foreground hover:text-foreground hover:bg-secondary font-mono text-xs">[CANCEL]</Button>
             </div>
           </div>
         </div>
@@ -685,38 +677,38 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left: Tree Builder */}
-          <div className="terminal-border crt-screen bg-[#0a0d0a] flex flex-col" suppressHydrationWarning>
+          <div className="terminal-border crt-screen bg-card flex flex-col" suppressHydrationWarning>
             {/* Toolbar */}
-            <div className="px-4 py-2 border-b border-green-800/50 flex items-center justify-between bg-[#080b08]">
+            <div className="px-4 py-2 border-b border-border flex items-center justify-between bg-background/50">
               <div className="flex items-center gap-2">
-                <Zap className="h-3.5 w-3.5 text-amber-500" />
-                <span className="text-xs font-bold tracking-widest uppercase text-amber-400 glow-amber">BUILDER</span>
+                <Zap className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-bold tracking-widest uppercase text-primary glow-active">BUILDER</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Button variant="outline" size="sm" onClick={undo} disabled={!canUndo()}
-                  className="border-green-800/40 text-green-500 hover:bg-green-900/30 bg-transparent font-mono text-xs h-7 w-7 p-0" title="Undo (Ctrl+Z)">
+                  className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs h-7 w-7 p-0" title="Undo (Ctrl+Z)">
                   <Undo2 className="h-3.5 w-3.5" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={redo} disabled={!canRedo()}
-                  className="border-green-800/40 text-green-500 hover:bg-green-900/30 bg-transparent font-mono text-xs h-7 w-7 p-0" title="Redo (Ctrl+Y)">
+                  className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs h-7 w-7 p-0" title="Redo (Ctrl+Y)">
                   <Redo2 className="h-3.5 w-3.5" />
                 </Button>
-                <span className="w-px h-4 bg-green-900/40" />
+                <span className="w-px h-4 bg-border/40" />
                 <Button variant="outline" size="sm" onClick={expandAll}
-                  className="border-green-800/40 text-green-500 hover:bg-green-900/30 bg-transparent h-7 w-7 p-0" title="Expand all">
+                  className="border-border text-foreground hover:bg-secondary bg-transparent h-7 w-7 p-0" title="Expand all">
                   <ChevronsUpDown className="h-3.5 w-3.5" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={collapseAll}
-                  className="border-green-800/40 text-green-500 hover:bg-green-900/30 bg-transparent h-7 w-7 p-0" title="Collapse all">
+                  className="border-border text-foreground hover:bg-secondary bg-transparent h-7 w-7 p-0" title="Collapse all">
                   <ChevronsDownUp className="h-3.5 w-3.5" />
                 </Button>
-                <span className="w-px h-4 bg-green-900/40" />
+                <span className="w-px h-4 bg-border/40" />
                 <Button variant="outline" size="sm" onClick={() => addNode(null, 'folder')}
-                  className="border-amber-700/50 text-amber-400 hover:bg-amber-900/30 bg-transparent font-mono text-xs h-7">
+                  className="border-border text-primary hover:bg-secondary bg-transparent font-mono text-xs h-7">
                   <FolderPlus className="h-3.5 w-3.5 mr-1" />FOLDER
                 </Button>
                 <Button variant="outline" size="sm" onClick={() => addNode(null, 'file')}
-                  className="border-green-700/50 text-green-400 hover:bg-green-900/30 bg-transparent font-mono text-xs h-7">
+                  className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs h-7">
                   <FilePlus className="h-3.5 w-3.5 mr-1" />FILE
                 </Button>
               </div>
@@ -728,10 +720,10 @@ export default function Home() {
               <div className="flex-1 p-1 overflow-hidden">
                 <ScrollArea className="h-[calc(100vh-380px)] min-h-[260px]">
                   {nodes.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-green-700">
+                    <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
                       <Folder className="h-12 w-12 mb-3 opacity-30" />
-                      <p className="text-sm font-mono glow-green tracking-wider">NO ITEMS LOADED</p>
-                      <p className="text-[0.65rem] mt-1 font-mono text-green-800">Use FOLDER/FILE buttons, or load a TEMPLATE</p>
+                      <p className="text-sm font-mono glow-active tracking-wider">NO ITEMS LOADED</p>
+                      <p className="text-[0.65rem] mt-1 font-mono text-muted-foreground/80">Use FOLDER/FILE buttons, or load a TEMPLATE</p>
                     </div>
                   ) : (
                     <div className="py-1">{nodes.map((node) => <DraggableTreeNodeRow key={node.id} node={node} depth={1} />)}</div>
@@ -742,39 +734,39 @@ export default function Home() {
             </DndContext>
 
             {/* AI Command Bar */}
-            <div className="border-t border-purple-800/40 bg-[#080b08] px-3 py-2">
+            <div className="border-t border-border bg-background/30 px-3 py-2">
               <form onSubmit={(e) => { e.preventDefault(); handleAiSubmit() }}
                 className="flex items-center gap-2">
-                <Sparkles className={`h-3.5 w-3.5 shrink-0 ${aiLoading ? 'text-purple-300 animate-pulse' : 'text-purple-500'}`} />
+                <Sparkles className={`h-3.5 w-3.5 shrink-0 ${aiLoading ? 'text-primary animate-pulse' : 'text-primary/70'}`} />
                 <Input
                   value={aiPrompt}
                   onChange={(e) => { setAiPrompt(e.target.value); setAiError(null) }}
                   placeholder="AI: add docker, make it a monorepo, suggest a blog layout..."
                   disabled={aiLoading}
-                  className="h-7 text-xs font-mono bg-black/50 border-purple-800/40 text-purple-200 placeholder:text-purple-800 focus:border-purple-500/60 focus:ring-purple-500/20 px-2 flex-1 min-w-0"
+                  className="h-7 text-xs font-mono bg-background/50 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary/20 px-2 flex-1 min-w-0"
                 />
                 <Button type="submit" size="sm" disabled={aiLoading || !aiPrompt.trim()}
-                  className="bg-purple-900/50 border border-purple-600/40 text-purple-200 hover:bg-purple-800/50 font-mono text-xs h-7 px-2.5 shrink-0 disabled:opacity-40">
+                  className="bg-secondary border border-border text-foreground hover:bg-muted font-mono text-xs h-7 px-2.5 shrink-0 disabled:opacity-40">
                   {aiLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'GO'}
                 </Button>
               </form>
               {aiError && (
-                <p className="text-[0.55rem] text-red-400 font-mono mt-1 px-1">{aiError}</p>
+                <p className="text-[0.55rem] text-destructive font-mono mt-1 px-1">{aiError}</p>
               )}
             </div>
 
             {/* Orchestration Results Panel */}
             {aiResults?.showPanel && (
-              <div className="border-t border-purple-800/40 bg-[#080b08] px-3 py-2 max-h-64 overflow-y-auto">
+              <div className="border-t border-border bg-background/50 px-3 py-2 max-h-64 overflow-y-auto">
                 {/* Analyzer */}
                 <div className="mb-2">
-                  <p className="text-[0.6rem] font-bold text-purple-400 uppercase tracking-wider mb-1">{'>'} Analyzer</p>
-                  <pre className="text-[0.6rem] text-purple-300 font-mono whitespace-pre-wrap leading-relaxed">{aiResults.analysis}</pre>
+                  <p className="text-[0.6rem] font-bold text-primary uppercase tracking-wider mb-1">{'>'} Analyzer</p>
+                  <pre className="text-[0.6rem] text-foreground font-mono whitespace-pre-wrap leading-relaxed">{aiResults.analysis}</pre>
                 </div>
                 {/* Verifier */}
                 <div className="mb-2">
-                  <p className="text-[0.6rem] font-bold text-purple-400 uppercase tracking-wider mb-1">{'>'} Verifier</p>
-                  <div className={`text-[0.6rem] font-mono ${aiResults.verification.safe ? 'text-green-400' : 'text-amber-400'}`}>
+                  <p className="text-[0.6rem] font-bold text-primary uppercase tracking-wider mb-1">{'>'} Verifier</p>
+                  <div className={`text-[0.6rem] font-mono ${aiResults.verification.safe ? 'text-foreground' : 'text-primary'}`}>
                     Safe: {aiResults.verification.safe ? 'YES' : 'NO'}
                     {aiResults.verification.issues.length > 0 && (
                       <ul className="mt-1 space-y-0.5">
@@ -789,11 +781,11 @@ export default function Home() {
                 {aiResults.proposed?.nodes && (
                   <div className="flex gap-2 mt-2">
                     <Button size="sm" onClick={handleApplyProposed}
-                      className="bg-purple-900/50 border border-purple-600/40 text-purple-200 hover:bg-purple-800/50 font-mono text-xs h-7">
+                      className="bg-secondary border border-border text-foreground hover:bg-muted font-mono text-xs h-7">
                       APPLY PROPOSED TREE
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setAiResults(null)}
-                      className="text-green-600 hover:text-green-400 hover:bg-green-900/20 font-mono text-xs h-7">
+                      className="text-muted-foreground hover:text-foreground hover:bg-secondary font-mono text-xs h-7">
                       [DISMISS]
                     </Button>
                   </div>
@@ -803,11 +795,11 @@ export default function Home() {
           </div>
 
           {/* Right: Output */}
-          <div className="terminal-border-amber crt-screen bg-[#0a0d0a] flex flex-col" suppressHydrationWarning>
-            <div className="px-4 py-2.5 border-b border-amber-800/40 flex items-center justify-between bg-[#080b08]">
+          <div className="terminal-border-amber crt-screen bg-card flex flex-col" suppressHydrationWarning>
+            <div className="px-4 py-2.5 border-b border-border flex items-center justify-between bg-background/50">
               <div className="flex items-center gap-2">
-                <Terminal className="h-3.5 w-3.5 text-green-400" />
-                <span className="text-xs font-bold tracking-widest uppercase text-green-400 glow-green">OUTPUT</span>
+                <Terminal className="h-3.5 w-3.5 text-foreground" />
+                <span className="text-xs font-bold tracking-widest uppercase text-foreground glow-active">OUTPUT</span>
               </div>
               <div className="flex items-center gap-1">
                 {/* Export format toggle */}
@@ -820,14 +812,14 @@ export default function Home() {
                   <Button key={key} variant="ghost" size="sm"
                     onClick={() => setExportFormat(key)}
                     className={`h-6 px-2 font-mono text-[0.6rem] ${
-                      exportFormat === key ? 'text-amber-400 bg-amber-900/20 ring-1 ring-amber-600/30' : 'text-green-700 hover:text-green-400'
+                      exportFormat === key ? 'text-primary bg-secondary border border-border font-bold' : 'text-muted-foreground hover:text-foreground'
                     }`}>
                     <Icon className="h-3 w-3 mr-1" />{label}
                   </Button>
                 ))}
-                <span className="w-px h-4 bg-amber-900/30" />
+                <span className="w-px h-4 bg-border/40" />
                 <Button variant="outline" size="sm" onClick={() => setShowOutput(!showOutput)}
-                  className="border-green-800/40 text-green-500 hover:bg-green-900/30 bg-transparent font-mono text-xs h-6">
+                  className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs h-6">
                   {showOutput ? '[HIDE]' : '[SHOW]'}
                 </Button>
               </div>
@@ -841,39 +833,39 @@ export default function Home() {
                       <span className="w-2 h-2 rounded-full bg-red-500/60" />
                       <span className="w-2 h-2 rounded-full bg-amber-500/60" />
                       <span className="w-2 h-2 rounded-full bg-green-500/60" />
-                      <span className="text-[0.6rem] text-green-700 ml-2 font-mono">
+                      <span className="text-[0.6rem] text-muted-foreground ml-2 font-mono">
                         {rootName}-structure.{exportFormat === 'json' ? 'json' : 'txt'}
                       </span>
                     </div>
-                    <pre className="bg-black/70 border border-green-900/40 p-4 text-sm font-mono overflow-x-auto leading-relaxed min-h-[200px] max-h-[calc(100vh-440px)] overflow-y-auto text-green-400 glow-green">
+                    <pre className="bg-background/80 border border-border p-4 text-sm font-mono overflow-x-auto leading-relaxed min-h-[200px] max-h-[calc(100vh-440px)] overflow-y-auto text-foreground">
                       {outputText || `${rootName}/`}
                     </pre>
                   </div>
 
                   <div className="flex items-center gap-2 mt-4">
-                    <Button size="sm" onClick={handleCopy} className="flex-1 bg-green-900/40 border border-green-700/50 text-green-300 hover:bg-green-800/50 font-mono text-xs glow-green">
+                    <Button size="sm" onClick={handleCopy} className="flex-1 bg-secondary border border-border text-foreground hover:bg-muted font-mono text-xs">
                       {copied ? <><Check className="h-3.5 w-3.5 mr-1.5" />COPIED!</> : <><Copy className="h-3.5 w-3.5 mr-1.5" />COPY TO CLIPBOARD</>}
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleDownload} disabled={nodes.length === 0}
-                      className="border-amber-700/50 text-amber-400 hover:bg-amber-900/30 bg-transparent font-mono text-xs">
+                      className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
                       <Download className="h-3.5 w-3.5 mr-1.5" />DOWNLOAD
                     </Button>
                     <Button variant="outline" size="sm" onClick={handleGenerateScript} disabled={nodes.length === 0}
-                      className="border-purple-700/50 text-purple-400 hover:bg-purple-900/30 bg-transparent font-mono text-xs">
+                      className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs">
                       <Terminal className="h-3.5 w-3.5 mr-1.5" />SCRIPT
                     </Button>
                   </div>
 
                   {/* Tips */}
-                  <div className="mt-4 border border-green-900/30 bg-black/40 p-3">
-                    <h3 className="text-xs font-bold tracking-widest uppercase text-amber-400 glow-amber mb-2">{'>'} CONTROLS</h3>
-                    <ul className="text-[0.6rem] text-green-600 space-y-1 font-mono">
-                      <li><span className="text-amber-500 font-bold">01</span> Drag nodes onto folders to re-nest</li>
-                      <li><span className="text-amber-500 font-bold">02</span> <GripVertical className="h-2.5 w-2.5 inline" /> grip handle to start dragging</li>
-                      <li><span className="text-amber-500 font-bold">03</span> <CopyPlus className="h-2.5 w-2.5 inline" /> duplicate clones a node + children</li>
-                      <li><span className="text-amber-500 font-bold">04</span> <Undo2 className="h-2.5 w-2.5 inline" /> Ctrl+Z / Ctrl+Y for undo/redo</li>
-                      <li><span className="text-amber-500 font-bold">05</span> Switch output: Tree / mkdir / JSON</li>
-                      <li><span className="text-amber-500 font-bold">06</span> Templates give you a head start</li>
+                  <div className="mt-4 border border-border bg-background/50 p-3">
+                    <h3 className="text-xs font-bold tracking-widest uppercase text-primary glow-active mb-2">{'>'} CONTROLS</h3>
+                    <ul className="text-[0.6rem] text-muted-foreground space-y-1 font-mono">
+                      <li><span className="text-primary font-bold">01</span> Drag nodes onto folders to re-nest</li>
+                      <li><span className="text-primary font-bold">02</span> <GripVertical className="h-2.5 w-2.5 inline" /> grip handle to start dragging</li>
+                      <li><span className="text-primary font-bold">03</span> <CopyPlus className="h-2.5 w-2.5 inline" /> duplicate clones a node + children</li>
+                      <li><span className="text-primary font-bold">04</span> <Undo2 className="h-2.5 w-2.5 inline" /> Ctrl+Z / Ctrl+Y for undo/redo</li>
+                      <li><span className="text-primary font-bold">05</span> Switch output: Tree / mkdir / JSON</li>
+                      <li><span className="text-primary font-bold">06</span> Templates give you a head start</li>
                     </ul>
                   </div>
                 </>
