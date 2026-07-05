@@ -511,7 +511,10 @@ export default function Home() {
               <Terminal className="h-5 w-5 text-primary glow-active-pulse" />
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-widest uppercase text-primary glow-active">tree_Lover</h1>
+              <div className="flex items-center">
+                <h1 className="text-lg font-bold tracking-widest uppercase text-primary glow-active">tree_Lover</h1>
+                <span className="text-[0.55rem] font-mono tracking-widest text-muted-foreground/70 border border-border/60 px-1 ml-2 rounded select-none">v.forever_Alpha</span>
+              </div>
               <p className="text-[0.65rem] text-muted-foreground tracking-wider uppercase">
                 Visual folder structure builder &gt; export for agents
               </p>
