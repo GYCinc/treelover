@@ -123,7 +123,7 @@ export function compileTreeToRust(rootName: string, nodes: TreeNode[]): string {
   if (hasDoom) {
     rustCode += `    // DOOM CANAL MODE ACTIVATED\n`;
     rustCode += `    println!("\\n[DOOM CANAL TRIGGERED] Booting E1M1 corridor walk...");\n`;
-    rustCode += `    std::thread::sleep(std::time::Duration::from_millis(800));\n`;
+    rustCode += `    std::thread::sleep(std::time::Duration::from_millis(150));\n`;
     rustCode += `    let frames = vec![\n`;
     rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |  |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\n  |  | o o |   | o o |   | o o |   | o o | |\\n  |  (  v  )   (  v  )   (  v  )   (  v  ) |\\n  |   \\\\___/     \\\\___/     \\\\___/     \\\\___/  |\\n  |                                    |\\n  |        [  +  ]  CROSSHAIR          |\\n  +------------------------------------+\\n  | AMMO: 50 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
     rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |       |\\\\_/|            |\\\\_/|       |\\n  |       | - - |   (!!!)   | - - |      |\\n  |       (  v  )   CACO!   (  v  )      |\\n  |        \\\\___/            \\\\___/       |\\n  |                \\\\ _ /                |\\n  |               - (o.o) -              |\\n  |        [  +  ]   / \\\\                |\\n  +------------------------------------+\\n  | AMMO: 49 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
@@ -132,7 +132,7 @@ export function compileTreeToRust(rootName: string, nodes: TreeNode[]): string {
     rustCode += `    for frame in frames {\n`;
     rustCode += `        print!("{}", frame);\n`;
     rustCode += `        std::io::Write::flush(&mut std::io::stdout()).unwrap();\n`;
-    rustCode += `        std::thread::sleep(std::time::Duration::from_millis(1000));\n`;
+    rustCode += `        std::thread::sleep(std::time::Duration::from_millis(100));\n`;
     rustCode += `    }\n`;
     rustCode += `    println!("E1M1 Canal Run Complete. Doom Guy sailed safely.");\n`;
   }
