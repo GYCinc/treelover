@@ -116,7 +116,26 @@ export function compileTreeToRust(rootName: string, nodes: TreeNode[]): string {
   rustCode += `    let final_state = canal_network::flow_to_ocean();\n`;
   rustCode += `    println!("Flow Complete. Reach Ocean Bay.");\n`;
   rustCode += `    println!("Stream path: {}", final_state.stream_path);\n`;
-  rustCode += `    println!("Bridges sailed under: {}", final_state.bridges_passed);\n`;
+  rustCode += `    println!("Bridges sailed under: {}", final_state.bridges_passed);\n\n`;
+
+  // Detect DOOM activation in the tree
+  const hasDoom = JSON.stringify(nodes).toLowerCase().includes('doom') || rootName.toLowerCase().includes('doom');
+  if (hasDoom) {
+    rustCode += `    // DOOM CANAL MODE ACTIVATED\n`;
+    rustCode += `    println!("\\n[DOOM CANAL TRIGGERED] Booting E1M1 corridor walk...");\n`;
+    rustCode += `    std::thread::sleep(std::time::Duration::from_millis(800));\n`;
+    rustCode += `    let frames = vec![\n`;
+    rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |  |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\n  |  | o o |   | o o |   | o o |   | o o | |\\n  |  (  v  )   (  v  )   (  v  )   (  v  ) |\\n  |   \\\\___/     \\\\___/     \\\\___/     \\\\___/  |\\n  |                                    |\\n  |        [  +  ]  CROSSHAIR          |\\n  +------------------------------------+\\n  | AMMO: 50 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
+    rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |       |\\\\_/|            |\\\\_/|       |\\n  |       | - - |   (!!!)   | - - |      |\\n  |       (  v  )   CACO!   (  v  )      |\\n  |        \\\\___/            \\\\___/       |\\n  |                \\\\ _ /                |\\n  |               - (o.o) -              |\\n  |        [  +  ]   / \\\\                |\\n  +------------------------------------+\\n  | AMMO: 49 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
+    rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |       |\\\\_/|            |\\\\_/|       |\\n  |       | x x |  *BOOM*   | x x |      |\\n  |       (  -  )  *SPLT*   (  -  )      |\\n  |        \\\\___/            \\\\___/       |\\n  |                 \\\\|/                 |\\n  |                (x.x)                 |\\n  |        [  *  ]   / \\\\                |\\n  +------------------------------------+\\n  | AMMO: 48 | HEALTH: 95%  | ARMOR: 76% |\\n  +------------------------------------+\\n"\n`;
+    rustCode += `    ];\n`;
+    rustCode += `    for frame in frames {\n`;
+    rustCode += `        print!("{}", frame);\n`;
+    rustCode += `        std::io::Write::flush(&mut std::io::stdout()).unwrap();\n`;
+    rustCode += `        std::thread::sleep(std::time::Duration::from_millis(1000));\n`;
+    rustCode += `    }\n`;
+    rustCode += `    println!("E1M1 Canal Run Complete. Doom Guy sailed safely.");\n`;
+  }
   rustCode += `}\n`;
 
   return rustCode;
