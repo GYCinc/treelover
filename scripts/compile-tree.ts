@@ -123,16 +123,18 @@ export function compileTreeToRust(rootName: string, nodes: TreeNode[]): string {
   if (hasDoom) {
     rustCode += `    // DOOM CANAL MODE ACTIVATED\n`;
     rustCode += `    println!("\\n[DOOM CANAL TRIGGERED] Booting E1M1 corridor walk...");\n`;
-    rustCode += `    std::thread::sleep(std::time::Duration::from_millis(150));\n`;
+    rustCode += `    std::thread::sleep(std::time::Duration::from_millis(100));\n`;
+    rustCode += `    // Clear screen once\n`;
+    rustCode += `    print!("\\x1b[2J");\n`;
     rustCode += `    let frames = vec![\n`;
-    rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |  |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\n  |  | o o |   | o o |   | o o |   | o o | |\\n  |  (  v  )   (  v  )   (  v  )   (  v  ) |\\n  |   \\\\___/     \\\\___/     \\\\___/     \\\\___/  |\\n  |                                    |\\n  |        [  +  ]  CROSSHAIR          |\\n  +------------------------------------+\\n  | AMMO: 50 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
-    rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |       |\\\\_/|            |\\\\_/|       |\\n  |       | - - |   (!!!)   | - - |      |\\n  |       (  v  )   CACO!   (  v  )      |\\n  |        \\\\___/            \\\\___/       |\\n  |                \\\\ _ /                |\\n  |               - (o.o) -              |\\n  |        [  +  ]   / \\\\                |\\n  +------------------------------------+\\n  | AMMO: 49 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
-    rustCode += `        "\\x1b[2J\\x1b[H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |       |\\\\_/|            |\\\\_/|       |\\n  |       | x x |  *BOOM*   | x x |      |\\n  |       (  -  )  *SPLT*   (  -  )      |\\n  |        \\\\___/            \\\\___/       |\\n  |                 \\\\|/                 |\\n  |                (x.x)                 |\\n  |        [  *  ]   / \\\\                |\\n  +------------------------------------+\\n  | AMMO: 48 | HEALTH: 95%  | ARMOR: 76% |\\n  +------------------------------------+\\n"\n`;
+    rustCode += `        "\\x1b[1;1H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |  |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\\\_/|   |\\n  |  | o o |   | o o |   | o o |   | o o | |\\n  |  (  v  )   (  v  )   (  v  )   (  v  ) |\\n  |   \\\\___/     \\\\___/     \\\\___/     \\\\___/  |\\n  |                                    |\\n  |        [  +  ]  CROSSHAIR          |\\n  +------------------------------------+\\n  | AMMO: 50 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
+    rustCode += `        "\\x1b[1;1H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |       |\\\\_/|            |\\\\_/|       |\\n  |       | - - |   (!!!)   | - - |      |\\n  |       (  v  )   CACO!   (  v  )      |\\n  |        \\\\___/            \\\\___/       |\\n  |                \\\\ _ /                |\\n  |               - (o.o) -              |\\n  |        [  +  ]   / \\\\                |\\n  +------------------------------------+\\n  | AMMO: 49 | HEALTH: 100% | ARMOR: 80% |\\n  +------------------------------------+\\n",\n`;
+    rustCode += `        "\\x1b[1;1H\\n  +------------------------------------+\\n  |  .   .  .   .  .  .   .  .   .  .  |\\n  |       |\\\\_/|            |\\\\_/|       |\\n  |       | x x |  *BOOM*   | x x |      |\\n  |       (  -  )  *SPLT*   (  -  )      |\\n  |        \\\\___/            \\\\___/       |\\n  |                 \\\\|/                 |\\n  |                (x.x)                 |\\n  |        [  *  ]   / \\\\                |\\n  +------------------------------------+\\n  | AMMO: 48 | HEALTH: 95%  | ARMOR: 76% |\\n  +------------------------------------+\\n"\n`;
     rustCode += `    ];\n`;
     rustCode += `    for frame in frames {\n`;
     rustCode += `        print!("{}", frame);\n`;
     rustCode += `        std::io::Write::flush(&mut std::io::stdout()).unwrap();\n`;
-    rustCode += `        std::thread::sleep(std::time::Duration::from_millis(100));\n`;
+    rustCode += `        std::thread::sleep(std::time::Duration::from_millis(50));\n`;
     rustCode += `    }\n`;
     rustCode += `    println!("E1M1 Canal Run Complete. Doom Guy sailed safely.");\n`;
   }
