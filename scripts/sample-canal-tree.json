@@ -8,7 +8,7 @@
       "children": [
         {
           "id": "node-2",
-          "name": "siphon_valve_A",
+          "name": "paddle_valve_A",
           "type": "file",
           "children": []
         },
@@ -19,6 +19,12 @@
           "children": [
             {
               "id": "node-4",
+              "name": "Stone_Bridge",
+              "type": "file",
+              "children": []
+            },
+            {
+              "id": "node-4b",
               "name": "drain_nozzle_B",
               "type": "file",
               "children": []

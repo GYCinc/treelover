@@ -9,49 +9,55 @@ interface TreeNode {
 }
 
 /**
- * treeLover Compiler: Compiles a directory structure representing canals/gates
+ * Paddle Compiler: Compiles a directory structure representing Canals, Locks, and Bridges
  * into native Rust source code.
  */
 export function compileTreeToRust(rootName: string, nodes: TreeNode[]): string {
-  let rustCode = `// Generated natively by treeLover v.forever_Alpha\n\n`;
+  let rustCode = `// Generated natively by Paddle v.forever_Alpha\n\n`;
   
   // Base structural imports
   rustCode += `#[derive(Debug, Clone)]\n`;
-  rustCode += `pub struct SiphonState {\n`;
-  rustCode += `    pub data: String,\n`;
-  rustCode += `    pub level: usize,\n`;
+  rustCode += `pub struct PaddleFlowState {\n`;
+  rustCode += `    pub stream_path: String,\n`;
+  rustCode += `    pub lock_depth: usize,\n`;
+  rustCode += `    pub bridges_passed: usize,\n`;
   rustCode += `}\n\n`;
 
-  // Recursive block compiler representing UK Canal Gates
+  // Recursive block compiler representing UK Canal System
   function compileNode(node: TreeNode, depth: number): string {
     const indent = '    '.repeat(depth);
     let output = '';
 
     if (node.type === 'folder') {
       const moduleName = node.name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-      output += `${indent}// Canal Gate (Lock): ${node.name}\n`;
+      output += `${indent}// Canal Lock Section: ${node.name}\n`;
       output += `${indent}pub mod ${moduleName} {\n`;
-      output += `${indent}    use super::SiphonState;\n\n`;
+      output += `${indent}    use super::PaddleFlowState;\n\n`;
       
-      // Every folder has its local siphon function
-      output += `${indent}    pub fn siphon(state: &mut SiphonState) {\n`;
-      output += `${indent}        state.level += 1;\n`;
-      output += `${indent}        println!("[Gate Level {}] Flowing through lock: {}", state.level, "${node.name}");\n`;
+      // Every folder has its local flow function
+      output += `${indent}    pub fn paddle_flow(state: &mut PaddleFlowState) {\n`;
+      output += `${indent}        state.lock_depth += 1;\n`;
+      output += `${indent}        println!("[Lock Level {}] Opening gates for: {}", state.lock_depth, "${node.name}");\n`;
       
-      // Process children logic inside the siphon canal
+      // Process children logic inside the canal
       for (const child of node.children) {
         if (child.type === 'folder') {
           const childMod = child.name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-          output += `${indent}        ${childMod}::siphon(state);\n`;
+          output += `${indent}        ${childMod}::paddle_flow(state);\n`;
         } else {
-          // File acting as digital siphon draining logic
           const cleanFileName = child.name.replace(/\.[^/.]+$/, "");
-          output += `${indent}        // Siphon logic drain: ${child.name}\n`;
-          output += `${indent}        state.data.push_str(" -> ${cleanFileName}");\n`;
+          if (cleanFileName.toLowerCase().includes('bridge')) {
+            output += `${indent}        // Bridge crossing over the canal: ${child.name}\n`;
+            output += `${indent}        state.bridges_passed += 1;\n`;
+            output += `${indent}        state.stream_path.push_str(" =(under bridge)=> ${cleanFileName}");\n`;
+          } else {
+            output += `${indent}        // Paddle gate drain operation: ${child.name}\n`;
+            output += `${indent}        state.stream_path.push_str(" -> ${cleanFileName}");\n`;
+          }
         }
       }
       
-      output += `${indent}        state.level -= 1;\n`;
+      output += `${indent}        state.lock_depth -= 1;\n`;
       output += `${indent}    }\n`;
       
       // Nested modules definitions
@@ -67,20 +73,29 @@ export function compileTreeToRust(rootName: string, nodes: TreeNode[]): string {
   }
 
   // Root canal system activation
-  rustCode += `// Root System Gate: ${rootName}\n`;
-  rustCode += `pub mod root_system {\n`;
-  rustCode += `    use super::SiphonState;\n\n`;
-  rustCode += `    pub fn flow() -> SiphonState {\n`;
-  rustCode += `        let mut state = SiphonState { data: "start".to_string(), level: 0 };\n`;
+  rustCode += `// Canal Network Entry: ${rootName}\n`;
+  rustCode += `pub mod canal_network {\n`;
+  rustCode += `    use super::PaddleFlowState;\n\n`;
+  rustCode += `    pub fn flow_to_ocean() -> PaddleFlowState {\n`;
+  rustCode += `        let mut state = PaddleFlowState {\n`;
+  rustCode += `            stream_path: "headwaters".to_string(),\n`;
+  rustCode += `            lock_depth: 0,\n`;
+  rustCode += `            bridges_passed: 0,\n`;
+  rustCode += `        };\n`;
   
   // Start the upstream flow through main nodes
   for (const node of nodes) {
     if (node.type === 'folder') {
       const modName = node.name.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-      rustCode += `        ${modName}::siphon(&mut state);\n`;
+      rustCode += `        ${modName}::paddle_flow(&mut state);\n`;
     } else {
       const cleanName = node.name.replace(/\.[^/.]+$/, "");
-      rustCode += `        state.data.push_str(" -> ${cleanName}");\n`;
+      if (cleanName.toLowerCase().includes('bridge')) {
+        rustCode += `        state.bridges_passed += 1;\n`;
+        rustCode += `        state.stream_path.push_str(" =(under bridge)=> ${cleanName}");\n`;
+      } else {
+        rustCode += `        state.stream_path.push_str(" -> ${cleanName}");\n`;
+      }
     }
   }
   
@@ -97,9 +112,11 @@ export function compileTreeToRust(rootName: string, nodes: TreeNode[]): string {
 
   // Main runner
   rustCode += `fn main() {\n`;
-  rustCode += `    println!("--- Digital Siphon Canal Flowing ---");\n`;
-  rustCode += `    let final_state = root_system::flow();\n`;
-  rustCode += `    println!("Final Siphoned Data Flow Output: {}", final_state.data);\n`;
+  rustCode += `    println!("--- Canal flow initialized. Paddles open! ---");\n`;
+  rustCode += `    let final_state = canal_network::flow_to_ocean();\n`;
+  rustCode += `    println!("Flow Complete. Reach Ocean Bay.");\n`;
+  rustCode += `    println!("Stream path: {}", final_state.stream_path);\n`;
+  rustCode += `    println!("Bridges sailed under: {}", final_state.bridges_passed);\n`;
   rustCode += `}\n`;
 
   return rustCode;
