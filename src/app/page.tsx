@@ -371,11 +371,11 @@ export default function Home() {
   }, [applyAiTree])
 
   // Convert tree nodes to the minimal DTO format the AI expects
-  const treeToDto = useCallback((nodes: TreeNode[]): AiNodeDTO[] => {
+  const treeToDto = useCallback(function toDto(nodes: TreeNode[]): AiNodeDTO[] {
     return nodes.map(n => ({
       name: n.name,
       type: n.type,
-      children: n.type === 'folder' ? treeToDto(n.children) : [],
+      children: n.type === 'folder' ? toDto(n.children) : [],
     }))
   }, [])
 
