@@ -421,48 +421,6 @@ export const TEMPLATES: ProjectTemplate[] = [
       createFile('README.md'),
     ],
   },
-  {
-    id: 'efl-student',
-    name: 'EFL Student Track',
-    description: 'Track and organize private English lessons for an EFL student',
-    rootName: 'student-track',
-    nodes: [
-      createFile('00_student_folder_topography.toml'),
-      createFile('01_student_context.toml'),
-      createFile('02_do_and_dont.md'),
-      createFile('AGENTS.md'),
-      createFile('ingestion_manifest.json'),
-      createFolder('W01', [
-        createFile('the_weekly_vibes.html'),
-        createFolder('C01', [
-          createFolder('artifacts', [
-            createFile('C01_MM-DD-YYYY_perfect_tense_refresh.md'),
-            createFile('C01_MM-DD-YYYY_KWL_Chart.html'),
-            createFile('AGENTS.md'),
-          ]),
-          createFolder('observations', [
-            createFile('C01_MM-DD-YYYY_asset_log.md'),
-            createFile('C01_MM-DD-YYYY_asset_log.html'),
-            createFile('AGENTS.md'),
-          ]),
-        ]),
-        createFolder('C02', [
-          createFolder('artifacts', [
-            createFile('AGENTS.md'),
-          ]),
-          createFolder('observations'),
-        ]),
-        createFolder('artifacts', [
-          createFile('AGENTS.md'),
-          createFile('MM-DD-YYYY_prep.md'),
-        ]),
-        createFolder('observations'),
-      ]),
-      createFolder('W02', [
-        createFile('the_weekly_vibes.html'),
-      ]),
-    ],
-  },
 ]
 
 // ─── AI tree import helper ────────────────────────────────────────────
