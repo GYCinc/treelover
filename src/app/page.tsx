@@ -15,8 +15,11 @@ import {
   type ThemeName,
 } from '@/lib/tree-store'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   DndContext,
   DragOverlay,
@@ -65,6 +68,13 @@ import {
   Loader2,
   HelpCircle,
   FolderOpen,
+  ListPlus,
+  ReplaceAll,
+  ArrowDownAZ,
+  AlignVerticalSpaceAround,
+  FolderArchive,
+  Palette,
+  FolderSync,
 } from 'lucide-react'
 
 // ─── Export format type ──────────────────────────────────────────────
@@ -73,14 +83,15 @@ type ExportFormat = 'tree' | 'mkdir' | 'json' | 'script'
 
 // ─── Draggable Tree Node ──────────────────────────────────────────────
 
-function DraggableTreeNodeRow({ node, depth }: { node: TreeNode; depth: number }) {
+function DraggableTreeNodeRow({ node, depth, showBulkRename = false, bulkRenamePreview = [] }: { node: TreeNode; depth: number; showBulkRename?: boolean; bulkRenamePreview?: any[] }) {
   const {
     selectedId, editingId, movingId,
     selectNode, toggleExpand, deleteNode, renameNode,
-    setEditingId, addNode, moveNode, moveNodeTo, setMovingId, cancelMove, duplicateNode,
+    setEditingId, addNode, moveNode, moveNodeTo, setMovingId, cancelMove, duplicateNode, sortNodes, flattenFolder, groupByExtension, setNodeColor, cloneStructure,
   } = useTreeStore()
 
   const isSelected = selectedId === node.id
+    const isRenameTarget = showBulkRename && bulkRenamePreview.some(p => p.id === node.id)
   const isEditing = editingId === node.id
   const isBeingMoved = movingId === node.id
   const isClickDropTarget = movingId !== null && node.type === 'folder' && movingId !== node.id
@@ -175,6 +186,10 @@ function DraggableTreeNodeRow({ node, depth }: { node: TreeNode; depth: number }
                 <>
                   <button onClick={(e) => { e.stopPropagation(); addNode(node.id, 'folder') }} className="p-1 rounded hover:bg-secondary text-accent" title="Add subfolder"><FolderPlus className="h-3.5 w-3.5" /></button>
                   <button onClick={(e) => { e.stopPropagation(); addNode(node.id, 'file') }} className="p-1 rounded hover:bg-secondary text-foreground" title="Add file"><FilePlus className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); sortNodes(node.id) }} className="p-1 rounded hover:bg-secondary text-primary" title="Sort Folder"><ArrowDownAZ className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); flattenFolder(node.id) }} className="p-1 rounded hover:bg-secondary text-primary" title="Flatten Folder"><AlignVerticalSpaceAround className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); groupByExtension(node.id) }} className="p-1 rounded hover:bg-secondary text-primary" title="Group by Extension"><FolderArchive className="h-3.5 w-3.5" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); cloneStructure(node.id) }} className="p-1 rounded hover:bg-secondary text-primary" title="Clone Structure (No Files)"><FolderSync className="h-3.5 w-3.5" /></button>
                 </>
               )}
               <button onClick={(e) => { e.stopPropagation(); setMovingId(node.id) }} className="p-1 rounded hover:bg-secondary text-primary" title="Move"><Move className="h-3.5 w-3.5" /></button>
@@ -182,6 +197,20 @@ function DraggableTreeNodeRow({ node, depth }: { node: TreeNode; depth: number }
               <button onClick={(e) => { e.stopPropagation(); setEditingId(node.id) }} className="p-1 rounded hover:bg-secondary text-foreground" title="Rename"><Pencil className="h-3.5 w-3.5" /></button>
               <button onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'up') }} className="p-1 rounded hover:bg-secondary text-muted-foreground" title="Move up"><ArrowUp className="h-3 w-3" /></button>
               <button onClick={(e) => { e.stopPropagation(); moveNode(node.id, 'down') }} className="p-1 rounded hover:bg-secondary text-muted-foreground" title="Move down"><ArrowDown className="h-3 w-3" /></button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="p-1 rounded hover:bg-secondary text-foreground" onClick={(e) => e.stopPropagation()} title="Color"><Palette className="h-3.5 w-3.5" /></button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2 bg-card border-border flex gap-1" align="start" onClick={(e) => e.stopPropagation()}>
+                  {['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', undefined].map((c, i) => (
+                    <button key={i} onClick={(e) => { e.stopPropagation(); setNodeColor(node.id, c) }}
+                      className="w-5 h-5 rounded hover:scale-110 transition-transform flex items-center justify-center border border-border"
+                      style={c ? { backgroundColor: c } : { background: 'transparent' }}>
+                      {!c && <X className="h-3 w-3 text-muted-foreground" />}
+                    </button>
+                  ))}
+                </PopoverContent>
+              </Popover>
             </>
           )}
           <button onClick={(e) => { e.stopPropagation(); if (isBeingMoved) cancelMove(); else deleteNode(node.id) }}
@@ -195,7 +224,7 @@ function DraggableTreeNodeRow({ node, depth }: { node: TreeNode; depth: number }
       {node.type === 'folder' && node.isExpanded && node.children.length > 0 && (
         <div>
           {node.children.map((child) => (
-            <DraggableTreeNodeRow key={child.id} node={child} depth={depth + 1} />
+            <DraggableTreeNodeRow key={child.id} node={child} depth={depth + 1} showBulkRename={showBulkRename} bulkRenamePreview={bulkRenamePreview} />
           ))}
         </div>
       )}
@@ -289,12 +318,20 @@ export default function Home() {
     rootName, nodes, movingId,
     setRootName, addNode, moveNodeTo, cancelMove, clearAll, importTree,
     loadTemplate, duplicateNode: _dup, undo, redo, canUndo, canRedo,
-    expandAll, collapseAll, applyAiTree, originalSnapshot,
+    expandAll, collapseAll, applyAiTree, originalSnapshot, bulkAddPaths, bulkRename,
+    sortNodes,
   } = useTreeStore()
 
   const [copied, setCopied] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [importText, setImportText] = useState('')
+  const [showBulkAdd, setShowBulkAdd] = useState(false)
+  const [bulkAddText, setBulkAddText] = useState('')
+  const [showBulkRename, setShowBulkRename] = useState(false)
+  const [bulkFind, setBulkFind] = useState('')
+  const [bulkReplace, setBulkReplace] = useState('')
+  const bulkRenamePreview = useMemo(() => bulkRename(bulkFind, bulkReplace, false), [bulkFind, bulkReplace, bulkRename,
+    sortNodes, nodes])
   const [showOutput, setShowOutput] = useState(true)
   const [showTemplates, setShowTemplates] = useState(false)
   const [exportFormat, setExportFormat] = useState<ExportFormat>('tree')
@@ -750,6 +787,10 @@ export default function Home() {
                   className="border-border text-foreground hover:bg-secondary bg-transparent h-7 w-7 p-0" title="Collapse all">
                   <ChevronsDownUp className="h-3.5 w-3.5" />
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => sortNodes(null)}
+                  className="border-border text-foreground hover:bg-secondary bg-transparent h-7 w-7 p-0" title="Sort all">
+                  <ArrowDownAZ className="h-3.5 w-3.5" />
+                </Button>
                 <span className="w-px h-4 bg-border/40" />
                 <Button variant="outline" size="sm" onClick={() => addNode(null, 'folder')}
                   className="border-border text-primary hover:bg-secondary bg-transparent font-mono text-xs h-7">
@@ -759,6 +800,94 @@ export default function Home() {
                   className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs h-7">
                   <FilePlus className="h-3.5 w-3.5 mr-1" />FILE
                 </Button>
+                <Dialog open={showBulkRename} onOpenChange={setShowBulkRename}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm"
+                      className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs h-7">
+                      <ReplaceAll className="h-3.5 w-3.5 mr-1" />BULK RENAME
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md bg-card border-border crt-screen">
+                    <DialogHeader>
+                      <DialogTitle className="font-mono text-primary flex items-center gap-2">
+                        <ReplaceAll className="h-5 w-5" /> BULK RENAME
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Find (e.g. .js)"
+                          value={bulkFind}
+                          onChange={(e) => setBulkFind(e.target.value)}
+                          className="font-mono text-sm bg-background/50 border-border"
+                        />
+                        <Input
+                          placeholder="Replace (e.g. .ts)"
+                          value={bulkReplace}
+                          onChange={(e) => setBulkReplace(e.target.value)}
+                          className="font-mono text-sm bg-background/50 border-border"
+                        />
+                      </div>
+                      <div className="text-xs font-mono text-muted-foreground border border-border p-2 rounded bg-background/50 min-h-[60px] max-h-[120px] overflow-y-auto">
+                        {bulkRenamePreview.length > 0 ? (
+                          <ul className="space-y-1">
+                            {bulkRenamePreview.map((item) => (
+                              <li key={item.id} className="flex items-center gap-2 text-foreground">
+                                <span className="line-through opacity-60 text-destructive">{item.oldName}</span>
+                                <span>→</span>
+                                <span className="text-green-500">{item.newName}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <span className="opacity-50">No files will be affected...</span>
+                        )}
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowBulkRename(false)} className="font-mono text-xs">CANCEL</Button>
+                      <Button
+                        disabled={bulkRenamePreview.length === 0}
+                        onClick={() => { bulkRename(bulkFind, bulkReplace, true); setBulkFind(''); setBulkReplace(''); setShowBulkRename(false); }}
+                        className="font-mono text-xs bg-primary text-primary-foreground hover:bg-primary/90">
+                        REPLACE {bulkRenamePreview.length} ITEMS
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                <Dialog open={showBulkAdd} onOpenChange={setShowBulkAdd}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm"
+                      className="border-border text-foreground hover:bg-secondary bg-transparent font-mono text-xs h-7">
+                      <ListPlus className="h-3.5 w-3.5 mr-1" />BULK ADD
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md bg-card border-border crt-screen">
+                    <DialogHeader>
+                      <DialogTitle className="font-mono text-primary flex items-center gap-2">
+                        <ListPlus className="h-5 w-5" /> BULK ADD PATHS
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                      <p className="text-xs font-mono text-muted-foreground">
+                        Paste a list of file paths (one per line). Folders will be created automatically.
+                      </p>
+                      <Textarea
+                        value={bulkAddText}
+                        onChange={(e) => setBulkAddText(e.target.value)}
+                        placeholder="src/components/button.tsx
+src/utils/helpers.ts
+config/"
+                        className="font-mono text-sm h-32 bg-background/50 border-border"
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setShowBulkAdd(false)} className="font-mono text-xs">CANCEL</Button>
+                      <Button onClick={() => { bulkAddPaths(bulkAddText); setBulkAddText(''); setShowBulkAdd(false); }} className="font-mono text-xs bg-primary text-primary-foreground hover:bg-primary/90">ADD PATHS</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
 
@@ -774,7 +903,7 @@ export default function Home() {
                       <p className="text-[0.65rem] mt-1 font-mono text-muted-foreground/80">Use FOLDER/FILE buttons, or load a TEMPLATE</p>
                     </div>
                   ) : (
-                    <div className="py-1">{nodes.map((node) => <DraggableTreeNodeRow key={node.id} node={node} depth={1} />)}</div>
+                    <div className="py-1">{nodes.map((node) => <DraggableTreeNodeRow key={node.id} node={node} depth={1} showBulkRename={showBulkRename} bulkRenamePreview={bulkRenamePreview} />)}</div>
                   )}
                 </ScrollArea>
               </div>

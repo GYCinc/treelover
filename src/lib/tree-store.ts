@@ -6,6 +6,7 @@ export interface TreeNode {
   type: 'folder' | 'file'
   children: TreeNode[]
   isExpanded: boolean
+  color?: string
 }
 
 let _idCounter = 0
@@ -572,6 +573,13 @@ interface TreeState {
   collapseAll: () => void
   clearAll: () => void
   applyAiTree: (rootName: string, nodes: AiNodeDTO[], isImport?: boolean) => void
+  bulkAddPaths: (pathsText: string) => void
+  bulkRename: (find: string, replace: string, execute: boolean) => { id: string; oldName: string; newName: string }[]
+  sortNodes: (id: string | null) => void
+  flattenFolder: (id: string) => void
+  groupByExtension: (id: string) => void
+  setNodeColor: (id: string, color: string | undefined) => void
+  cloneStructure: (id: string) => void
 }
 
 interface FlattenedNode {
@@ -979,6 +987,260 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     const newHistory = [...state.history, { nodes: [], rootName: state.rootName }]
     if (newHistory.length > MAX_HISTORY) newHistory.shift()
     set({ nodes: [], selectedId: null, editingId: null, movingId: null, history: newHistory, historyIndex: newHistory.length - 1 })
+  },
+
+
+
+
+
+  flattenFolder: (id) => {
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+      const target = findNodeById(nodes, id)
+
+      if (!target || target.type !== 'folder') return { nodes }
+
+      const allFiles: TreeNode[] = []
+      const extractFiles = (n: TreeNode) => {
+        if (n.type === 'file') {
+          allFiles.push(n)
+        } else if (n.type === 'folder') {
+          for (const child of n.children) extractFiles(child)
+        }
+      }
+
+      for (const child of target.children) {
+        extractFiles(child)
+      }
+
+      target.children = allFiles
+
+      const newHistory = state.historyIndex < state.history.length - 1
+        ? state.history.slice(0, state.historyIndex + 1)
+        : [...state.history]
+      newHistory.push({ nodes: deepClone(nodes), rootName: state.rootName })
+      if (newHistory.length > MAX_HISTORY) newHistory.shift()
+
+      return { nodes, history: newHistory, historyIndex: newHistory.length - 1 }
+    })
+  },
+
+
+
+  cloneStructure: (id) => {
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+      const { parent, index } = findParentOf(nodes, id)
+      if (!parent) return { nodes }
+
+      const original = parent[index]
+      if (original.type !== 'folder') return { nodes }
+
+      const cloneFoldersOnly = (node: TreeNode): TreeNode => {
+        return createFolder(
+          node.name + '-struct',
+          node.children
+            .filter(c => c.type === 'folder')
+            .map(c => {
+              const f = cloneFoldersOnly(c)
+              f.name = f.name.replace('-struct', '') // only top level gets the -struct suffix to avoid collision
+              return f
+            })
+        )
+      }
+
+      const clone = cloneFoldersOnly(original)
+      parent.splice(index + 1, 0, clone)
+
+      const newHistory = state.historyIndex < state.history.length - 1
+        ? state.history.slice(0, state.historyIndex + 1)
+        : [...state.history]
+      newHistory.push({ nodes: deepClone(nodes), rootName: state.rootName })
+      if (newHistory.length > MAX_HISTORY) newHistory.shift()
+
+      return { nodes, selectedId: clone.id, history: newHistory, historyIndex: newHistory.length - 1 }
+    })
+  },
+
+  setNodeColor: (id, color) => {
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+      const node = findNodeById(nodes, id)
+      if (node) {
+        node.color = color
+      }
+
+      const newHistory = state.historyIndex < state.history.length - 1
+        ? state.history.slice(0, state.historyIndex + 1)
+        : [...state.history]
+      newHistory.push({ nodes: deepClone(nodes), rootName: state.rootName })
+      if (newHistory.length > MAX_HISTORY) newHistory.shift()
+
+      return { nodes, history: newHistory, historyIndex: newHistory.length - 1 }
+    })
+  },
+
+  groupByExtension: (id) => {
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+      const target = findNodeById(nodes, id)
+
+      if (!target || target.type !== 'folder') return { nodes }
+
+      const newChildren: TreeNode[] = []
+      const groups: Record<string, TreeNode[]> = {}
+
+      // Separate existing folders and extract files
+      for (const child of target.children) {
+        if (child.type === 'folder') {
+          newChildren.push(child)
+        } else {
+          const parts = child.name.split('.')
+          const ext = parts.length > 1 ? parts.pop()! : 'other'
+          if (!groups[ext]) groups[ext] = []
+          groups[ext].push(child)
+        }
+      }
+
+      // Create new folders for extensions
+      for (const [ext, files] of Object.entries(groups)) {
+        let extFolder = newChildren.find(c => c.name === ext && c.type === 'folder')
+        if (!extFolder) {
+          extFolder = createFolder(ext)
+          newChildren.push(extFolder)
+        }
+        extFolder.children.push(...files)
+      }
+
+      target.children = newChildren
+
+      const newHistory = state.historyIndex < state.history.length - 1
+        ? state.history.slice(0, state.historyIndex + 1)
+        : [...state.history]
+      newHistory.push({ nodes: deepClone(nodes), rootName: state.rootName })
+      if (newHistory.length > MAX_HISTORY) newHistory.shift()
+
+      return { nodes, history: newHistory, historyIndex: newHistory.length - 1 }
+    })
+  },
+
+  sortNodes: (id) => {
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+
+      const sortChildren = (children: TreeNode[]) => {
+        children.sort((a, b) => {
+          if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+          return a.name.localeCompare(b.name)
+        })
+        for (const child of children) {
+          if (child.type === 'folder') sortChildren(child.children)
+        }
+      }
+
+      if (id === null) {
+        sortChildren(nodes)
+      } else {
+        const node = findNodeById(nodes, id)
+        if (node && node.type === 'folder') {
+          sortChildren(node.children)
+        }
+      }
+
+      const newHistory = state.historyIndex < state.history.length - 1
+        ? state.history.slice(0, state.historyIndex + 1)
+        : [...state.history]
+      newHistory.push({ nodes: deepClone(nodes), rootName: state.rootName })
+      if (newHistory.length > MAX_HISTORY) newHistory.shift()
+
+      return { nodes, history: newHistory, historyIndex: newHistory.length - 1 }
+    })
+  },
+
+  bulkRename: (find, replaceStr, execute) => {
+    if (!find) return []
+
+    const state = get()
+    const affected: { id: string; oldName: string; newName: string }[] = []
+
+    // We do case sensitive matching using simple replace
+    const processNodes = (nodes: TreeNode[], mutate: boolean) => {
+      const result: TreeNode[] = []
+      for (const node of nodes) {
+        let newName = node.name
+        if (newName.includes(find)) {
+          newName = newName.split(find).join(replaceStr)
+          affected.push({ id: node.id, oldName: node.name, newName })
+        }
+
+        const newNode = mutate ? { ...node, name: newName } : node
+        if (node.type === 'folder' && node.children.length > 0) {
+          const newChildren = processNodes(node.children, mutate)
+          if (mutate) newNode.children = newChildren
+        }
+
+        result.push(newNode)
+      }
+      return result
+    }
+
+    if (execute) {
+      set((state) => {
+        const newNodes = processNodes(deepClone(state.nodes), true)
+        const newHistory = state.historyIndex < state.history.length - 1
+          ? state.history.slice(0, state.historyIndex + 1)
+          : [...state.history]
+        newHistory.push({ nodes: deepClone(newNodes), rootName: state.rootName })
+        if (newHistory.length > MAX_HISTORY) newHistory.shift()
+        return { nodes: newNodes, history: newHistory, historyIndex: newHistory.length - 1 }
+      })
+    } else {
+      processNodes(state.nodes, false)
+    }
+
+    return affected
+  },
+
+  bulkAddPaths: (pathsText) => {
+    const lines = pathsText.split('\n').map(l => l.trim()).filter(l => l.length > 0)
+    if (lines.length === 0) return
+
+    set((state) => {
+      const nodes = deepClone(state.nodes)
+
+      for (const line of lines) {
+        const parts = line.split(/[\\/]/).filter(p => p.length > 0)
+        if (parts.length === 0) continue
+
+        let currentLevel = nodes
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i]
+          const isFile = i === parts.length - 1 && (!part.endsWith('/') && part.includes('.')) // Very simple heuristic, assume last part with dot is file unless it ends with /
+
+          let existing = currentLevel.find(n => n.name === part)
+
+          if (!existing) {
+            existing = isFile ? createFile(part) : createFolder(part)
+            currentLevel.push(existing)
+          } else if (isFile && existing.type === 'folder') {
+            // Already a folder with this name, we can't make it a file
+          }
+
+          if (existing.type === 'folder') {
+            existing.isExpanded = true
+            currentLevel = existing.children
+          }
+        }
+      }
+
+      const newHistory = state.historyIndex < state.history.length - 1
+        ? state.history.slice(0, state.historyIndex + 1)
+        : [...state.history]
+      newHistory.push({ nodes: deepClone(nodes), rootName: state.rootName })
+      if (newHistory.length > MAX_HISTORY) newHistory.shift()
+
+      return { nodes, history: newHistory, historyIndex: newHistory.length - 1 }
+    })
   },
 
   applyAiTree: (newRootName, dtoNodes, isImport) => {
